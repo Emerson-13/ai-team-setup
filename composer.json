@@ -1,5 +1,5 @@
 {
-    "name": "emerson/ai-team-setup",
+    "name": "emerson-ph/ai-team-setup",
     "description": "AI Team Setup for Laravel projects - Configure Claude Code, GitHub Copilot, Cursor, and other AI tools with role-based strategy council",
     "type": "library",
     "license": "MIT",
