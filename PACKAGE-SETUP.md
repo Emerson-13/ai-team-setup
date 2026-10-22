@@ -68,7 +68,7 @@ The flow is:
 1. Composer downloads the package
 2. Service provider registers the publish tags
 3. `InstallAITeam` command calls `vendor:publish` for each tag
-4. Files from `publish/` directory get copied to the Laravel project root
+4. Files from `stubs/` directory get copied to the Laravel project root
 
 ### 2. Publishing Tags
 
@@ -121,9 +121,9 @@ cp PACKAGE-SETUP.md .
 cp .gitignore .
 ```
 
-### Step 3: Populate `publish/` Directory
+### Step 3: Populate `stubs/` Directory
 
-The original AI Team Setup files go into `publish/`:
+The original AI Team Setup files go into `stubs/`:
 
 ```bash
 mkdir -p publish/.claude/agents
@@ -247,7 +247,7 @@ php artisan list | grep ai-team
 
 When updating the original AI Team Setup files:
 
-1. Update files in the `publish/` directory
+1. Update files in the `stubs/` directory
 2. Update the version in `composer.json`
 3. Commit with meaningful message:
    ```bash

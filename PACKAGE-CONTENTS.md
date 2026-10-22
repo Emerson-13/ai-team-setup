@@ -18,7 +18,7 @@ This composer package makes the original AI Team Setup installable in any Larave
 ✅ .gitignore                 - Standard package ignore rules
 ```
 
-### What Gets Published (in `publish/` directory)
+### What Gets Published (in `stubs/` directory)
 
 When installed, these files are copied to the Laravel project:
 
@@ -233,7 +233,7 @@ php artisan vendor:publish --list | grep ai-team
 
 ## 🚢 Publishing Checklist
 
-- [ ] Update files in `publish/` directory
+- [ ] Update files in `stubs/` directory
 - [ ] Update version in `composer.json`
 - [ ] Test with fresh Laravel project locally
 - [ ] Commit changes: `git commit -am "message"`
