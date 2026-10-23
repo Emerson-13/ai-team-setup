@@ -15,6 +15,7 @@ A Laravel package that sets up a complete AI-powered development environment wit
 - Cline
 - Google Gemini CLI
 
+🔐 **Access control playbook** (admin side + client side, Spatie roles/permissions, super admin, per-company roles)
 🎯 **Strategy Council** (5 complementary roles)
 - Product Strategist
 - Marketing Strategist
@@ -96,6 +97,7 @@ laravel-project/
 ├── docs/ai/                           # Full documentation
 │   ├── TEAM.md                        # Complete playbook
 │   ├── STRATEGY.md                    # Strategy Council framework
+│   ├── ACCESS.md                      # Roles, permissions, admin/client sides
 │   ├── PACKAGES.md                    # Package setup
 │   ├── PLAYWRIGHT.md                  # E2E testing
 │   └── templates/                     # Test templates
@@ -156,6 +158,7 @@ php artisan ai-team:install --scripts    # Sync scripts only
 - **[INSTALLATION.md](INSTALLATION.md)** - Complete setup guide
 - **docs/ai/TEAM.md** - Full team playbook (published after installation)
 - **docs/ai/STRATEGY.md** - Strategy Council framework
+- **docs/ai/ACCESS.md** - Roles, permissions, admin side, client side, super admin
 - **docs/ai/PACKAGES.md** - Package setup and integration guides
 - **docs/ai/PLAYWRIGHT.md** - E2E testing with Playwright
 

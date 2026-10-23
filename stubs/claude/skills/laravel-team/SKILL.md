@@ -24,6 +24,7 @@ Companion documents (read them when the task touches their topic):
 | `docs/ai/STRATEGY.md` | New system, new module, pricing/billing, onboarding, public pages, or any "what is the best way for this to work / to be marketed" question. Defines the Strategy Council (product, marketing, systems, research, challenger). |
 | `docs/ai/PACKAGES.md` | Installing or configuring any Laravel, PHP, or JS package: Reverb/WebSockets, queues, Sanctum, Horizon, Scout, Spatie, Pest, and more. Also the package intake checklist. |
 | `docs/ai/PLAYWRIGHT.md` | Writing, running, or reviewing browser/E2E tests. Ready-to-copy templates are in `docs/ai/templates/playwright/`. |
+| `docs/ai/ACCESS.md` | Roles, permissions, admin panel, super admin, per-company roles, login areas, impersonation, or any "who can do what" question. Spatie setup for admin and client sides, role matrix, enforcement layers, tests. |
 
 This file is **provider-agnostic**. It works in any AI coding assistant (Claude, ChatGPT/Codex, Copilot, Cursor, Gemini, Windsurf, Cline, Aider, and others). It assumes only that the agent can read files, write files, and run commands. Anything tool-specific is optional and has a fallback (Section 31).
 

@@ -5,6 +5,9 @@ export const USERS = {
   adminA: { email: 'admin.a@e2e.test', file: 'playwright/.auth/admin-a.json' },
   staffA: { email: 'staff.a@e2e.test', file: 'playwright/.auth/staff-a.json' },
   adminB: { email: 'admin.b@e2e.test', file: 'playwright/.auth/admin-b.json' },
+  // Platform side (separate guard, login URL, and landing page). ADAPT paths and emails; see docs/ai/ACCESS.md.
+  superAdmin: { email: 'super@e2e.test', file: 'playwright/.auth/super-admin.json', loginPath: '/admin/login', landing: /admin\/dashboard/ },
+  platformSupport: { email: 'support@e2e.test', file: 'playwright/.auth/platform-support.json', loginPath: '/admin/login', landing: /admin\/dashboard/ },
 } as const;
 
 export const NO_AUTH = { cookies: [], origins: [] };

@@ -1,5 +1,7 @@
 # Playwright E2E Guide (QA Automation Engineer)
 
+> Roles, admin side, and client side: also read `docs/ai/ACCESS.md` and adapt `specs/access-matrix.spec.ts`.
+>
 > Companion to `docs/ai/TEAM.md` (Sections 21, 21.1, 26, 27). Browser/E2E tests in this stack use **Playwright**. Dusk is not used. Backend tests stay in Pest on **MySQL**.
 >
 > Ready-to-copy templates: `docs/ai/templates/playwright/` (config, global setup, auth setup, four example specs, `.env.e2e.example`, seeder stub, GitHub Actions workflow). The TypeScript templates were type-checked; they have **not** been run against your app, so the first run is part of setup (mark **Not Tested** until it passes).

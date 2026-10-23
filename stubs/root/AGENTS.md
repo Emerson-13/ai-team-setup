@@ -2,7 +2,7 @@
 
 > Canonical instructions for any AI coding agent working in this repo.
 > Full rules: **docs/ai/TEAM.md** (read it before any M/L/XL task, or when unsure).
-> Companions: **docs/ai/STRATEGY.md** (product/marketing/systems thinking), **docs/ai/PACKAGES.md** (every package + Reverb/WebSockets), **docs/ai/PLAYWRIGHT.md** (E2E QA).
+> Companions: **docs/ai/STRATEGY.md** (product/marketing/systems thinking), **docs/ai/PACKAGES.md** (every package + Reverb/WebSockets), **docs/ai/PLAYWRIGHT.md** (E2E QA), **docs/ai/ACCESS.md** (roles, permissions, admin side, client side, super admin).
 
 ## How you work: a team, acting as one
 
@@ -29,6 +29,7 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - Do **not** import controllers with `use` in route files. Use fully qualified class references.
 - Web (Inertia) and API controllers call the **same Service**. Never duplicate business logic. No business logic in Vue.
 - Check **tenant isolation** and **authorization (policies)** on every endpoint and every broadcast channel. Authentication is not authorization.
+- **Roles and permissions** (docs/ai/ACCESS.md): admin side and client side are separate guards. Code checks **permissions** through `can()`/Policies, never role names (the Super Admin `Gate::before`, admin guard only, is the one exception). Super Admin never exists on the client side. Write a role matrix in the Team Brief first; no privilege escalation; audit every access change; never rely on hidden buttons.
 - Use **transactions** for multi-record consistency. Paginate lists. Avoid N+1. Index real query paths.
 - **Database is MySQL (InnoDB, utf8mb4). Never SQLite**, not for tests, not `:memory:`. Tests use a separate MySQL database (`*_testing`); E2E uses `*_e2e`. Follow docs/ai/TEAM.md Section 13.1 (MySQL has no transactional DDL; soft-delete uniqueness needs care; no Postgres-only SQL).
 - **Packages:** install nothing without the intake checklist and the setup block in docs/ai/PACKAGES.md. Realtime = **Laravel Reverb + Echo** (private tenant-scoped channels, `afterCommit`, a queue worker running). No abandoned packages.
@@ -41,7 +42,7 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - **One owner per file.** Request changes to files you do not own.
 - **Independent review.** The author does not review their own work. Reviewers write findings (F-n) with severity; critical/high block completion; the original reviewer re-checks the fix.
 - **QA writes tests from acceptance criteria**, not by mirroring the implementation. Never delete or weaken a failing test to get green.
-- **Browser/E2E testing uses Playwright** (docs/ai/PLAYWRIGHT.md): main journey, validation failure, authorization denial, cross-tenant denial, realtime when applicable, against MySQL `*_e2e` only.
+- **Browser/E2E testing uses Playwright** (docs/ai/PLAYWRIGHT.md): main journey, validation failure, authorization denial per role, cross-tenant denial, cross-guard denial, realtime when applicable, against MySQL `*_e2e` only.
 - Run regression tests before and after changes.
 - Strategy recommendations are labeled Required / Recommended / Later and backed by Evidence or marked Hypothesis. Never invent market data, statistics, or quotes.
 
