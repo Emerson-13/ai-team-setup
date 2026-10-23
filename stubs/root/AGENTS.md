@@ -2,7 +2,7 @@
 
 > Canonical instructions for any AI coding agent working in this repo.
 > Full rules: **docs/ai/TEAM.md** (read it before any M/L/XL task, or when unsure).
-> Companions: **docs/ai/STRATEGY.md** (product/marketing/systems thinking), **docs/ai/PACKAGES.md** (every package + Reverb/WebSockets), **docs/ai/PLAYWRIGHT.md** (E2E QA), **docs/ai/ACCESS.md** (roles, permissions, admin side, client side, super admin).
+> Companions: **docs/ai/STRATEGY.md** (product/marketing/systems thinking), **docs/ai/PACKAGES.md** (every package + Reverb/WebSockets), **docs/ai/PLAYWRIGHT.md** (E2E QA), **docs/ai/ACCESS.md** (roles, permissions, admin side, client side, super admin), **docs/ai/N8N.md** (AI features through n8n, with import-ready workflows in docs/ai/n8n/).
 
 ## How you work: a team, acting as one
 
@@ -34,6 +34,7 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - **Database is MySQL (InnoDB, utf8mb4). Never SQLite**, not for tests, not `:memory:`. Tests use a separate MySQL database (`*_testing`); E2E uses `*_e2e`. Follow docs/ai/TEAM.md Section 13.1 (MySQL has no transactional DDL; soft-delete uniqueness needs care; no Postgres-only SQL).
 - **Packages:** install nothing without the intake checklist and the setup block in docs/ai/PACKAGES.md. Realtime = **Laravel Reverb + Echo** (private tenant-scoped channels, `afterCommit`, a queue worker running). No abandoned packages.
 - **Frontend split** (TEAM.md Section 8.1): **public/SEO pages are Blade** (one layout, one SEO partial, sitemap, robots, `noindex` for the app). **For authenticated pages, ask the user once** which framework (Vue + Inertia suggested, React + Inertia, Livewire, separate SPA, other), unless the project already uses one. If you cannot ask, assume Vue + Inertia and record the assumption.
+- **AI features** (docs/ai/N8N.md): Laravel calls an **n8n webhook** from a Service, never a model API directly and never from the browser. Use the importable workflows in `docs/ai/n8n/`; new ones use only built-in AI nodes (Agent, Chat Model, chains), no HTTP/Code nodes, and the user supplies their own API key credential in n8n. Queue slow calls, tenant-scope `session_id`, rate-limit, validate output.
 - No fake features: no hardcoded arrays or mock logic unless a prototype was requested.
 - Do not add repositories, abstractions, or packages unless justified. Keep changes minimal and targeted; do not modify shared/reusable components unless required, and flag it if you do.
 

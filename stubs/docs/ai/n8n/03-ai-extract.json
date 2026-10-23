@@ -1,0 +1,147 @@
+{
+  "id": "aiExtract003",
+  "name": "AI Extract Data (Laravel)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-extract",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a7507c08-d027-4914-a8ce-d76796a3cdc3",
+      "name": "Webhook",
+      "webhookId": "1d3af2b8-1f1c-4d79-b445-4e1b68d49678",
+      "notes": "Laravel calls this URL. Set the credential: Header Auth, name X-N8N-Secret, value = your secret."
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.body.text }}",
+        "schemaType": "fromAttributes",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "summary",
+              "type": "string",
+              "description": "One-sentence summary of the text",
+              "required": true
+            },
+            {
+              "name": "intent",
+              "type": "string",
+              "description": "What the sender wants, e.g. question, complaint, request, feedback",
+              "required": true
+            },
+            {
+              "name": "sentiment",
+              "type": "string",
+              "description": "positive, neutral, or negative",
+              "required": true
+            },
+            {
+              "name": "language",
+              "type": "string",
+              "description": "Language of the text, e.g. en, fil",
+              "required": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        300,
+        0
+      ],
+      "id": "11405df8-3d75-4456-9a97-c89a64d9c11e",
+      "name": "Extract Data",
+      "notes": "Edit the attribute list to the fields your app needs."
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        300,
+        240
+      ],
+      "id": "45192e68-9738-4b3e-87c0-c26e216f162c",
+      "name": "Chat Model",
+      "notes": "Pick YOUR credential here. To use another provider (Anthropic, Gemini, Groq, Ollama...), delete this node, add that provider's Chat Model node, and connect it to the same input."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"data\": $json.output } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        620,
+        0
+      ],
+      "id": "42f926f6-7456-4ed9-9ee9-d0ccf7b205e1",
+      "name": "Respond to Laravel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Data": {
+      "main": [
+        [
+          {
+            "node": "Respond to Laravel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Data",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
