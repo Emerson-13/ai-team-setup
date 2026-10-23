@@ -62,7 +62,7 @@ One **Orchestrator (Tech Lead)** is the single voice to you. It sizes the task (
 | Security Reviewer | AuthN/AuthZ, tenant isolation, data exposure |
 | Performance Reviewer | Queries, N+1, caching, queues |
 | Code Reviewer | Architecture, maintainability, duplication |
-| UX Reviewer | User flow, states, consistency |
+| UX Reviewer | User flow, states, consistency, UI-kit conformity |
 
 The author never reviews their own work. Critical and high findings block completion.
 
@@ -104,6 +104,10 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 | `TEAM.md` | The full playbook: modes, sizing, Team Brief, architecture rules, MySQL rules, security, testing, reviews |
 | `STRATEGY.md` | Strategy Council protocol, Strategy Brief, marketing and SEO requirements |
 | `ACCESS.md` | Roles and permissions with Spatie: admin side and client side as separate guards, super admin, per-company roles, role matrix, tests |
+| `PROTOCOL.md` | Agent status (running / completed / timed out / blocked), required agents, brief template, no-guessing and token rules, verify-and-fix loop |
+| `PROMPTS.md` | Copy-paste prompts: feature, bug, refactor, review, roles, storage, AI, resume |
+| `STORAGE.md` | Files and uploads through one `StorageService`: cloud if configured, public-disk fallback |
+| `UI.md` | Build screens from one ready-made UI kit or template (Tailwind-based by default), not custom CSS |
 | `N8N.md` | AI features through n8n: import steps, Laravel client, rules |
 | `PACKAGES.md` | Package intake checklist, Reverb + Echo setup, Spatie and other packages |
 | `PLAYWRIGHT.md` | E2E guide, isolation, seed data, watching a run |
@@ -113,6 +117,7 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 | Folder | Contents |
 |---|---|
 | `docs/ai/n8n/` | Import-ready n8n workflows (below) |
+| `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`) |
 | `docs/ai/templates/playwright/` | Playwright config, auth setup, seeder, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
 
 ### n8n AI workflows (`docs/ai/n8n/`)
@@ -162,6 +167,9 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 
 - **Public pages (SEO):** Blade.
 - **Authenticated pages:** the agent asks which framework (Vue + Inertia, React + Inertia, Livewire, other).
+- **Agents:** the agent uses your named agents, shows a status table (running / completed / timed out / blocked), and stops at blocked or timed out. It fixes failing checks before it finishes.
+- **Files:** one `StorageService`; cloud storage if configured, otherwise the public disk (private files stay private).
+- **UI:** one ready-made kit or template (the agent asks once; suggests shadcn-vue / shadcn/ui, Flowbite, DaisyUI, Preline, or your own template).
 - **Access control:** separate admin and client guards, Spatie permissions, checks through policies.
 - **AI features:** n8n webhooks called from a Laravel Service.
 - **Database:** MySQL only. **Tests:** Pest + Playwright. **Realtime:** Reverb + Echo.

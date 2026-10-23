@@ -20,6 +20,10 @@ Companion documents (read them when the task touches their topic):
 | `docs/ai/PACKAGES.md` | Installing or configuring any Laravel, PHP, or JS package: Reverb/WebSockets, queues, Sanctum, Horizon, Scout, Spatie, Pest, and more. Also the package intake checklist. |
 | `docs/ai/PLAYWRIGHT.md` | Writing, running, or reviewing browser/E2E tests. Ready-to-copy templates are in `docs/ai/templates/playwright/`. |
 | `docs/ai/ACCESS.md` | Roles, permissions, admin panel, super admin, per-company roles, login areas, impersonation, or any "who can do what" question. Spatie setup for admin and client sides, role matrix, enforcement layers, tests. |
+| `docs/ai/PROTOCOL.md` | Delegating to agents or finishing any task: required agents, agent status (running/completed/timed_out/blocked), brief template, no-guessing rules, token discipline, the verify-and-fix loop. |
+| `docs/ai/PROMPTS.md` | Copy-paste prompts for features, bugs, refactors, reviews, roles, storage, AI features, resuming. |
+| `docs/ai/STORAGE.md` | Uploads, files, exports: one `StorageService`, cloud if configured, public-disk fallback, tenant paths. |
+| `docs/ai/UI.md` | Building or changing any screen: which UI kit or template to use (Tailwind-based by default), tokens, components first, required states. |
 | `docs/ai/N8N.md` | Any AI feature (chatbot, summarize, rewrite, translate, extract): Laravel calls n8n webhooks. Import-ready workflows are in `docs/ai/n8n/`; how to add new ones and the rules for calling them. |
 
 This file is **provider-agnostic**. It works in any AI coding assistant (Claude, ChatGPT/Codex, Copilot, Cursor, Gemini, Windsurf, Cline, Aider, and others). It assumes only that the agent can read files, write files, and run commands. Anything tool-specific is optional and has a fallback (Section 31).
@@ -194,6 +198,8 @@ Acceptance (which AC-IDs it satisfies)
 Status: pending | in_progress | blocked | review | done
 ```
 
+Delegated agents have their own status (`running | completed | timed_out | blocked`, `docs/ai/PROTOCOL.md` Section 2). A task that depends on an agent cannot start until that agent is `completed`.
+
 Rules:
 
 - Only the Orchestrator creates, re-scopes, or closes tasks.
@@ -208,6 +214,9 @@ Updated: <time>   Mode/Size: <mode> / <size>   Stack: <authenticated frontend>
 - [x] T1 Schema (Database Engineer): done
 - [ ] T3 Orders API (Backend Engineer): in_progress
 - [ ] T4 Orders page (Frontend Engineer): blocked, waiting for T3 contract
+## Agents
+| Agent | Task | Status | Evidence / reason |
+| qa-playwright | E2E for orders | blocked | app not running on 8001 |
 ## Findings
 - F-1 high: missing tenant check in OrderPolicy::view (open)
 ## Next
@@ -601,6 +610,8 @@ Two surfaces, two defaults (details in Section 8.1):
 3. **Livewire** (server-driven Blade components)
 4. **Separate SPA / mobile client** over an API (Sanctum)
 5. Other (the user names it)
+
+Ask the **UI kit or template** question in the same message (`docs/ai/UI.md` Section 1). Screens are built from one ready-made kit, not from hand-made CSS.
 
 Rules:
 
@@ -1552,6 +1563,7 @@ Some tools can spawn sub-agents, run background agents, or split work across wor
 - Each sub-agent returns a **structured handoff** (Section 3.3) or findings (Section 3.8), not a vague summary.
 - The Orchestrator **verifies** sub-agent output against the real files before marking a task done. A claim of success is not evidence.
 - Do not delegate and also duplicate the same work.
+- Use the **named** project agents, track their status (`running | completed | timed_out | blocked`), and stop at `blocked` or `timed_out` (`docs/ai/PROTOCOL.md`). Never silently fall back to a default agent.
 - Use separate git worktrees or branches when parallel agents could otherwise collide on files.
 
 ## 31.3 Mode C: Human-In-The-Loop Multi-Tool (fallback)
