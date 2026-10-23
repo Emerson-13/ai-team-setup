@@ -125,3 +125,16 @@ A task is not finished when the code is written. It is finished when the checks 
 - [ ] Every claim backed by a file, command, or label? (Section 4)
 - [ ] Briefs short and complete? No pasted files? (Sections 3, 5)
 - [ ] Checks run and re-run after fixes? (Section 6)
+- [ ] Preflight run before Pest/Playwright; stalls and tool failures reported as `blocked`, not retried blindly? (Section 8)
+
+## 8. Stalls, busy ports, and tool failures
+
+Tests and browsers fail for boring reasons (MySQL down, port taken, tool unavailable). Handle them the same way every time:
+
+1. **Preflight before running anything heavy:** `php docs/ai/templates/laravel/test-doctor.php` before Pest, `npm run e2e:doctor` before Playwright. Any FAIL: stop, report `blocked` with the exact output, wait for the user. Do not run the suite hoping it works.
+2. **No hanging.** A command with no output for 120 seconds is stalled. Stop it, run the doctor, report `blocked`. Never wait indefinitely and never launch the same command again.
+3. **One retry at most**, and only after the cause changed (you fixed something). Repeating an identical failing command is wasted tokens.
+4. **Ports:** the E2E config picks a free port itself. If you must free one, name the process and port to the user before killing anything you did not start.
+5. **A tool that fails (in-app browser, MCP, bridge) is not retried.** Use another route that does not need it (for E2E: Playwright from the shell). If there is none, label the result **Not Tested** with the exact error text.
+6. **Report, do not hide:** the final report lists each blocked check, the error, what was tried, and what the user must fix.
+

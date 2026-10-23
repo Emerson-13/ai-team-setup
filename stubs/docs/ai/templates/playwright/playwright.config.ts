@@ -1,13 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
 import { assertSafeE2EDatabase, laravelProcessEnv, loadE2EEnv } from './tests/e2e/support/env';
+import { pickFreePort } from './tests/e2e/support/ports';
 
 // Reads .env.e2e and REFUSES to run unless DB_DATABASE ends with "_e2e" (never touches dev/prod data).
 const e2eEnv = loadE2EEnv();
 assertSafeE2EDatabase(e2eEnv);
-const processEnv = laravelProcessEnv(e2eEnv);
 
-const APP_URL = e2eEnv.APP_URL ?? 'http://127.0.0.1:8001';
-const APP_PORT = new URL(APP_URL).port || '8001';
+// The test server gets a FREE port: the preferred one from APP_URL, or the next free one if it is busy.
+// Reusing an already-running server is opt-in (E2E_REUSE_SERVER=1) because that server may point at another database.
+const REUSE_SERVER = process.env.E2E_REUSE_SERVER === '1';
+const PREFERRED_PORT = Number(new URL(e2eEnv.APP_URL ?? 'http://127.0.0.1:8001').port || 8001);
+const APP_PORT = REUSE_SERVER ? PREFERRED_PORT : pickFreePort(PREFERRED_PORT);
+const APP_URL = `http://127.0.0.1:${APP_PORT}`;
+const processEnv = { ...laravelProcessEnv(e2eEnv), APP_URL };
+
 const REALTIME = e2eEnv.BROADCAST_CONNECTION === 'reverb';
 // E2E_WATCH=1 -> slow-motion, plus trace/video/screenshot for every test (use with --headed or --ui).
 const WATCH = process.env.E2E_WATCH === '1';
@@ -50,8 +56,8 @@ export default defineConfig({
       command: `php artisan serve --host=127.0.0.1 --port=${APP_PORT} --no-reload`,
       url: `${APP_URL}/up`,                // Laravel 11+ health route
       env: processEnv,
-      reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
+      reuseExistingServer: REUSE_SERVER,
+      timeout: 120_000,
     },
     ...(REALTIME
       ? [
@@ -59,8 +65,8 @@ export default defineConfig({
             command: `php artisan reverb:start --host=127.0.0.1 --port=${REVERB_PORT}`,
             port: REVERB_PORT,
             env: processEnv,
-            reuseExistingServer: !process.env.CI,
-            timeout: 60_000,
+            reuseExistingServer: REUSE_SERVER,
+            timeout: 120_000,
           },
         ]
       : []),

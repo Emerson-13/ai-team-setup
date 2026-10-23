@@ -117,8 +117,8 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 | Folder | Contents |
 |---|---|
 | `docs/ai/n8n/` | Import-ready n8n workflows (below) |
-| `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`) |
-| `docs/ai/templates/playwright/` | Playwright config, auth setup, seeder, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
+| `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`), `test-doctor.php` (Pest/MySQL preflight) |
+| `docs/ai/templates/playwright/` | Playwright config (auto free port), `e2e:doctor` preflight, auth setup, seeder, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
 
 ### n8n AI workflows (`docs/ai/n8n/`)
 
@@ -181,6 +181,7 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 |---|---|
 | "Missing" files listed during install | `composer reinstall emerson-ph/ai-team-setup`, then install again |
 | `sync-ai-files.sh` permission denied | `chmod +x sync-ai-files.sh` |
+| Playwright or Pest stalls, or the port is busy | `npm run e2e:doctor` / `php docs/ai/templates/laravel/test-doctor.php` (see `PLAYWRIGHT.md` Section 8.1) |
 | Tool ignores the rules | Restart the editor or reload the window |
 | `rm -rf` fails in PowerShell | Use `Remove-Item -Recurse -Force <path>` |
 

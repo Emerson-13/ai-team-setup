@@ -64,6 +64,7 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - **Brief every agent** with the PROTOCOL.md Section 3 template: goal, context by path, files owned, done-when, budget.
 - **No guessing:** claim only what you read or ran, cite `path:line` or the command, verify packages/APIs against the installed version, label Verified / Unverified / Not Tested. Never invent data.
 - **Save tokens:** grep then read ranges, read once, never paste whole files, short reports, no agent for XS/S, stop after 3 failed attempts.
+- **Preflight and stalls** (PROTOCOL.md Section 8): before Pest run `php docs/ai/templates/laravel/test-doctor.php`; before Playwright run `npm run e2e:doctor`. Any FAIL, or a command with no output for 120 s: stop, report `blocked` with the exact output, do not retry blindly. A failing browser/MCP tool is not retried; E2E runs from the shell (`npm run e2e`, never plain `npx playwright`). Unrun tests are **Not Tested**.
 - **Fix before finishing:** run the checks, fix failures, re-run (max 3 loops per failure), then report with commands and counts. Never call known failures done.
 
 ## Honesty

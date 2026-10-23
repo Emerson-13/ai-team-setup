@@ -47,6 +47,7 @@ Copy from the templates:
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:watch": "playwright test --headed --workers=1",
+    "e2e:doctor": "node tests/e2e/support/doctor.mjs",
     "e2e:report": "playwright show-report"
   }
 }
@@ -81,7 +82,7 @@ npm run e2e:ui         # interactive mode while writing tests
 
 - **Safety guard:** the config and global setup throw unless `DB_CONNECTION=mysql`, `DB_DATABASE` ends in `_e2e`, and `APP_ENV=e2e`. The suite cannot wipe `app` or `app_testing`.
 - **Reset and seed:** `global-setup.ts` runs `php artisan migrate:fresh --seed --seeder=E2ESeeder --force` with the e2e env.
-- **Server:** the config starts `php artisan serve` on the `APP_URL` port with the e2e env forced, and Reverb when realtime is configured. `reuseExistingServer` is on locally, off in CI.
+- **Server:** the config starts `php artisan serve` with the e2e env forced, and Reverb when realtime is configured. It uses the `APP_URL` port if it is free and **automatically picks the next free port if it is busy** (it prints which one). It never reuses a server it did not start, because that server may point at another database. Opt in with `E2E_REUSE_SERVER=1` only when you started that server yourself with the e2e env.
 - **Queue:** `sync` by default, so jobs and `ShouldBroadcast` events run inline and no worker is needed. If a feature must be proven through a real worker, add a separate, clearly named spec project that starts `queue:work` and document it in the Team Brief.
 - **Mail:** `MAIL_MAILER=log`; assert on side effects in the UI or via a Pest test, not on real delivery.
 - **Time and locale:** UTC and `en-US` are fixed in the config for stable assertions.
@@ -197,6 +198,26 @@ npx playwright codegen http://127.0.0.1:8001             # draft locators (clean
 | Review after the run | `npm run e2e:report` (HTML report), `npx playwright show-trace <trace.zip>` |
 
 Headed and UI modes need a screen. In CI, a cloud sandbox, or an agent running in the background there is no window to watch; use the report, trace, and video instead. **At the end of every E2E run the QA Automation Engineer reports the HTML report path and the trace/video paths of failed tests, and says whether the run was headless.**
+
+## 8.1 Preflight, stalls, and port conflicts
+
+**Run the preflight first, every time:** `npm run e2e:doctor`. It checks in under a few seconds: Node, `@playwright/test`, the Chromium browser, PHP, `.env.e2e` (MySQL, `_e2e` database, `APP_ENV=e2e`, `APP_KEY`), whether MySQL answers (3 s timeout), and the ports. If it prints FAIL, **stop and report `blocked` with its output**; do not start the suite and do not retry until it passes.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| "Port 8001 is already used" or the run waits then times out | A stale `php artisan serve` or another app holds the port | The config now picks the next free port by itself. To free it: Windows `Get-NetTCPConnection -LocalPort 8001 \| Select OwningProcess` then `Stop-Process -Id <id>`; Linux/macOS `lsof -i :8001` then `kill <pid>` |
+| Test discovery (`--list`) prints nothing and seems stuck | Plain `npx playwright` is waiting for a download prompt because `@playwright/test` is not installed | `npm install --save-dev @playwright/test`, then always use `npm run e2e -- --list` or `npx --no-install playwright test --list` |
+| Setup hangs, then "Database reset failed or timed out" | MySQL is not running, wrong host or credentials, or the `_e2e` database does not exist | `npm run e2e:doctor`; start MySQL; use `DB_HOST=127.0.0.1`; create the database |
+| Pest stalls at bootstrap | Same MySQL causes, for the `_testing` database | `php docs/ai/templates/laravel/test-doctor.php` |
+| An agent's in-app browser fails (for example a sandbox or metadata error) | The agent's browser tool is unavailable | **E2E does not use it.** Playwright starts its own Chromium from the shell. Do not retry the browser tool. Run `npm run e2e`; if the shell also cannot run it, mark UI verification **Not Tested** with the exact error |
+
+**Rules for agents:**
+
+- A command with **no output for 120 seconds** is stalled: stop it, run the doctor, and report `blocked` with the output. Do not wait longer and do not start the same command again.
+- Run Playwright from the shell with a hard time limit, for example `npm run e2e -- --reporter=line --timeout=60000 --global-timeout=900000`.
+- Start nothing you cannot stop. If you start a server, you stop it when you finish.
+- Never kill a process you did not start without telling the user which process and port.
+- Never report "E2E passed" unless `npx playwright test` ran and printed its result. Otherwise: **Not Tested**, with the reason.
 
 ## 9. Optional AI-assisted exploration (never a substitute for committed specs)
 

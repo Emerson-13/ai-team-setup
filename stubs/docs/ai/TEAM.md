@@ -1056,6 +1056,8 @@ Fresh Laravel installs ship `phpunit.xml` with SQLite lines. Replace them:
 <env name="DB_DATABASE" value="app_testing"/>
 ```
 
+Use `DB_HOST=127.0.0.1`, not `localhost` (on Windows `localhost` can stall on IPv6/socket lookup). Give the connection a timeout so a dead server fails fast instead of hanging: in `config/database.php` under `mysql`, `'options' => [PDO::ATTR_TIMEOUT => 5]` (merge with the existing options). **Before running Pest, run the preflight** `php docs/ai/templates/laravel/test-doctor.php`; if MySQL is not reachable, report `blocked` and do not retry the tests (`docs/ai/PROTOCOL.md` Section 8).
+
 Also remove SQLite from `composer.json` scripts, CI config, and docs. Add a guard so tests can never run against a real database: in `tests/TestCase.php` (or a Pest `beforeAll`), fail when `DB::getDatabaseName()` does not end in `_testing`.
 
 **Schema rules**
