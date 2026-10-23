@@ -46,6 +46,7 @@ Copy from the templates:
     "build:e2e": "vite build --mode e2e",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
+    "e2e:watch": "playwright test --headed --workers=1",
     "e2e:report": "playwright show-report"
   }
 }
@@ -186,6 +187,16 @@ npx playwright codegen http://127.0.0.1:8001             # draft locators (clean
 **Real failure vs test failure:** use the trace, screenshot, and server log (`storage/logs/laravel.log` of the e2e run). If the app is wrong, report a finding (F-n) to the Orchestrator; if the test is wrong, fix the test and say why.
 
 ---
+
+### Watching a run
+
+| Goal | How |
+|---|---|
+| Watch live with timeline and DOM snapshots | `npm run e2e:ui` (best option on your own machine) |
+| Watch the real browser click and type | `npm run e2e:watch`. Slow it down: PowerShell `$env:E2E_WATCH=1; npm run e2e:watch`, bash `E2E_WATCH=1 npm run e2e:watch` (adds slow-motion and records trace, video and screenshots for every test) |
+| Review after the run | `npm run e2e:report` (HTML report), `npx playwright show-trace <trace.zip>` |
+
+Headed and UI modes need a screen. In CI, a cloud sandbox, or an agent running in the background there is no window to watch; use the report, trace, and video instead. **At the end of every E2E run the QA Automation Engineer reports the HTML report path and the trace/video paths of failed tests, and says whether the run was headless.**
 
 ## 9. Optional AI-assisted exploration (never a substitute for committed specs)
 

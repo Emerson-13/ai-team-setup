@@ -5,7 +5,7 @@ This guide explains the composer package structure and how to prepare it for pub
 ## Current Structure
 
 ```
-emerson/ai-team-setup/
+emerson-ph/ai-team-setup/
 ├── composer.json                    # Package definition
 ├── README.md                        # Package description
 ├── INSTALLATION.md                  # Installation guide
@@ -60,7 +60,7 @@ emerson/ai-team-setup/
 
 When a developer runs:
 ```bash
-composer require emerson/ai-team-setup
+composer require emerson-ph/ai-team-setup
 php artisan ai-team:install
 ```
 
@@ -174,7 +174,7 @@ git push origin main --tags
 
 The package will be available at:
 ```
-https://packagist.org/packages/emerson/ai-team-setup
+https://packagist.org/packages/emerson-ph/ai-team-setup
 ```
 
 ## For Local Testing
@@ -203,7 +203,7 @@ Add to `composer.json`:
 
 Then install:
 ```bash
-composer require emerson/ai-team-setup:@dev
+composer require emerson-ph/ai-team-setup:@dev
 php artisan ai-team:install
 ```
 
@@ -224,7 +224,7 @@ Add to `composer.json`:
 ### Option C: Git Clone & Require
 
 ```bash
-composer require --dev emerson/ai-team-setup:dev-main
+composer require --dev emerson-ph/ai-team-setup:dev-main
 ```
 
 ## Verifying Installation
@@ -300,7 +300,7 @@ Once published to Packagist, it automatically:
 
 If Packagist doesn't auto-detect:
 ```bash
-# Visit: https://packagist.org/packages/emerson/ai-team-setup
+# Visit: https://packagist.org/packages/emerson-ph/ai-team-setup
 # Click "Force Update"
 ```
 

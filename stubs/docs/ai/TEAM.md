@@ -94,7 +94,7 @@ The Orchestrator does not write large amounts of implementation code itself. It 
 | **System Architect** | Module boundaries, service design, API contract, integration points, tenancy model | Architecture spec, module map, API contract |
 | **Database Engineer** | Schema, migrations, indexes, constraints, seeders, factories, data migration safety | Schema spec, migrations, factories |
 | **Backend Engineer** | Models, Services, Form Requests, Resources, Controllers, Policies, Jobs, Events | Backend code that matches the contract |
-| **Frontend Engineer** | Vue/Inertia pages, components, composables, UX states, API consumption | UI code with all states handled |
+| **Frontend Engineer** | Blade public pages (SEO), and the app framework the user chose (Vue/Inertia by default): pages, components, UX states, API consumption | UI code with all states handled |
 | **QA Engineer** | Test strategy, unit/feature/API/integration tests, regression runs | Tests, test report |
 | **QA Automation Engineer (Playwright)** | Browser/E2E tests for critical user journeys, cross-tenant UI checks, realtime checks, visual and accessibility smoke | Playwright specs, traces, E2E report |
 | **Platform / Realtime Engineer** | Packages and infrastructure wiring: queues, Reverb/WebSockets, Echo, cache, scheduler, Horizon, search, mail | Package setup, env keys, process list, channel authorization |
@@ -198,6 +198,22 @@ Rules:
 - Only the Orchestrator creates, re-scopes, or closes tasks.
 - A task is `done` only when its output exists **and** its acceptance check passed.
 - Blocked tasks state exactly what they are waiting for.
+- **Progress file.** The Orchestrator mirrors the board into `docs/ai/progress.md` so the user can watch progress in any tool by opening one file. Create it if missing. Update it only at these moments: task start, task status change, a review finding, a blocker, and the final report. Overwrite the file per task; do not append forever. Keep it short:
+
+```text
+# Progress: <task title>
+Updated: <time>   Mode/Size: <mode> / <size>   Stack: <authenticated frontend>
+## Tasks
+- [x] T1 Schema (Database Engineer): done
+- [ ] T3 Orders API (Backend Engineer): in_progress
+- [ ] T4 Orders page (Frontend Engineer): blocked, waiting for T3 contract
+## Findings
+- F-1 high: missing tenant check in OrderPolicy::view (open)
+## Next
+<one line>
+```
+
+  The file is session state; add `docs/ai/progress.md` to `.gitignore`.
 
 ## 3.3 Handoff Contract
 
@@ -419,6 +435,8 @@ The application must support multiple companies because the requirement
 says one client may own multiple companies.
 ```
 
+One standing question: for a new app or new frontend, **which framework for the authenticated pages** (Section 8.1), unless the project already uses one.
+
 Ask all necessary questions **once**, together, at the start, rather than interrupting repeatedly. The user speaks to the Orchestrator only. Roles do not message the user individually.
 
 When the user writes in a particular language or style (for example Taglish), the Orchestrator replies in that style. Code, identifiers, and commit messages stay in English.
@@ -538,10 +556,12 @@ Unless the user or the existing application specifies otherwise:
 
 ## Frontend
 
-- Vue 3 (Composition API, `<script setup>`)
+Two surfaces, two defaults (details in Section 8.1):
+
+- **Public pages** (landing, pricing, features, blog, legal, anything search engines must index): **Blade**, server-rendered.
+- **Authenticated app** (everything behind login): **ask the user which framework** (Section 8.1). Suggested default: Vue 3 (`<script setup>`) + Inertia. Follow an existing app's framework without asking.
 - TypeScript when the project already uses it (default to it for new frontends)
-- Inertia when the application architecture calls for it
-- Tailwind CSS
+- Tailwind CSS across both surfaces
 - Component-based UI, reuse of existing shared components
 
 ## Database
@@ -560,6 +580,34 @@ Unless the user or the existing application specifies otherwise:
 
 - WebSockets: **Laravel Reverb** + Laravel Echo by default (setup in `docs/ai/PACKAGES.md`). Do not use abandoned packages such as `beyondcode/laravel-websockets`.
 - Every package follows the intake checklist in `docs/ai/PACKAGES.md` and is recorded in the Team Brief under Packages.
+
+## 8.1 Frontend Split: Blade For Public Pages, Your Choice For The App
+
+**Public pages: Blade.** Server-rendered HTML is fast, crawlable without JavaScript, and has no hydration or SSR process to run. Use it for every page whose job is to be found: home, pricing, features, use-case pages, blog, FAQ, legal.
+
+- One public layout (`resources/views/layouts/public.blade.php`) and one SEO partial that every public page fills in: unique `<title>`, meta description, canonical URL, Open Graph and Twitter tags, robots meta, and JSON-LD where relevant (Organization, Product, FAQ, Article).
+- Same Controller -> Service -> view flow as the rest of the app. No business logic in Blade; no queries in views.
+- Generate `sitemap.xml` and `robots.txt`. The authenticated area and auth pages (`/login`, `/register`, dashboards) are `noindex` and disallowed.
+- Never put personalized or tenant data on a public page that is cached. If the header must show "Log in" vs "Dashboard", do it with a tiny client call or a non-cached fragment.
+- Keep JavaScript on public pages minimal (a little vanilla JS or Alpine for menus and forms). Do not load the whole app bundle on a marketing page.
+- Tailwind and design tokens are shared with the app so the brand matches. Cache public pages where it is safe (PACKAGES.md response caching).
+- Inertia SSR is the alternative only when public pages must live inside the SPA. Record that as an AD-n.
+
+**Authenticated app: ask once.** The framework changes architecture, packages, tests, and who can maintain the code, so it is one of the few questions worth asking (Section 6). Ask it **together with the other start-of-task questions**, with these options:
+
+1. **Vue 3 + Inertia** (suggested default for this playbook)
+2. **React + Inertia**
+3. **Livewire** (server-driven Blade components)
+4. **Separate SPA / mobile client** over an API (Sanctum)
+5. Other (the user names it)
+
+Rules:
+
+- If the project **already uses** one, do not ask: follow it (Section 0 precedence: existing conventions).
+- If you cannot ask, assume Vue 3 + Inertia, write it as an Assumption in the Team Brief, and continue.
+- Record the answer as an AD-n. The Frontend Engineer role then means "the chosen framework".
+- Rules that say "Vue" in this playbook mean the chosen framework's components: **no business logic in components, one Service shared with the API, handle loading/empty/error/forbidden states.** Package names for Vue (Inertia Vue adapter, Precognition Vue, Pinia) have React or Livewire equivalents. Look them up, run the intake checklist, and do not copy Vue snippets into a non-Vue app.
+- Playwright tests do not change with the framework (they test the browser, not the framework).
 
 ---
 

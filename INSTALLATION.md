@@ -7,7 +7,7 @@ Convert your Laravel project into an AI-enabled team workspace with Claude, GitH
 ### 1. Install via Composer
 
 ```bash
-composer require emerson/ai-team-setup
+composer require emerson-ph/ai-team-setup
 ```
 
 ### 2. Publish AI Team Files

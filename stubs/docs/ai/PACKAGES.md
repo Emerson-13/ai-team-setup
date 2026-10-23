@@ -263,7 +263,7 @@ Authorize the dashboard in `HorizonServiceProvider::gate()`. Tag jobs per tenant
 | Package | Use when | Notes |
 |---|---|---|
 | **Inertia** (`inertiajs/inertia-laravel`, `@inertiajs/vue3`) | Default | Props are visible in the page source: share only what the page needs; never share secrets or whole models. |
-| **Inertia SSR** | Public pages that need SEO (landing, pricing, blog) | `php artisan inertia:start-ssr` (Node process; add to deploy/process list). Alternative: serve marketing pages with plain Blade. Decide in the Strategy Brief. |
+| **Inertia SSR** | Public pages that need SEO (landing, pricing, blog) | `php artisan inertia:start-ssr` (Node process; add to deploy/process list). **Default for public pages is plain Blade (TEAM.md Section 8.1).** Use SSR only if public pages must live inside the SPA; record an AD-n. |
 | **Precognition** (`laravel-precognition-vue-inertia`) | Live validation using the **same Form Request** rules | Add `HandlePrecognitiveRequests` middleware to the routes; keeps one source of validation truth. |
 | **Wayfinder** (`laravel/wayfinder`, `@laravel/vite-plugin-wayfinder`) **or Ziggy** (`tightenco/ziggy`) | Typed/named routes in TypeScript | Choose one (match the project). With Wayfinder, route files still use fully qualified controller references. |
 | **Tailwind CSS** | Default | Match the installed major version; use the project's design tokens. |

@@ -50,7 +50,7 @@ When installed, these files are copied to the Laravel project:
 
 ```bash
 # 1. Add to project
-composer require emerson/ai-team-setup
+composer require emerson-ph/ai-team-setup
 
 # 2. Install & publish files
 php artisan ai-team:install
@@ -79,7 +79,7 @@ git init
 laravel new test-project
 cd test-project
 # Add path repository in composer.json
-composer require --path ../ai-team-setup emerson/ai-team-setup:@dev
+composer require --path ../ai-team-setup emerson-ph/ai-team-setup:@dev
 php artisan ai-team:install
 
 # 5. Publish to Packagist
@@ -240,7 +240,7 @@ php artisan vendor:publish --list | grep ai-team
 - [ ] Tag release: `git tag v1.X.X`
 - [ ] Push to GitHub: `git push origin main --tags`
 - [ ] Packagist detects automatically (or manually force update)
-- [ ] Verify on packagist.org/packages/emerson/ai-team-setup
+- [ ] Verify on packagist.org/packages/emerson-ph/ai-team-setup
 
 ---
 

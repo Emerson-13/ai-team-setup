@@ -9,6 +9,8 @@ const processEnv = laravelProcessEnv(e2eEnv);
 const APP_URL = e2eEnv.APP_URL ?? 'http://127.0.0.1:8001';
 const APP_PORT = new URL(APP_URL).port || '8001';
 const REALTIME = e2eEnv.BROADCAST_CONNECTION === 'reverb';
+// E2E_WATCH=1 -> slow-motion, plus trace/video/screenshot for every test (use with --headed or --ui).
+const WATCH = process.env.E2E_WATCH === '1';
 const REVERB_PORT = Number(e2eEnv.REVERB_SERVER_PORT ?? e2eEnv.REVERB_PORT ?? 8080);
 
 export default defineConfig({
@@ -21,9 +23,10 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: APP_URL,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    trace: WATCH ? 'on' : 'on-first-retry',
+    screenshot: WATCH ? 'on' : 'only-on-failure',
+    video: WATCH ? 'on' : 'retain-on-failure',
+    launchOptions: { slowMo: WATCH ? Number(process.env.E2E_SLOWMO ?? 300) : 0 },
     locale: 'en-US',
     timezoneId: 'UTC',
   },

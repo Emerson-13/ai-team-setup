@@ -66,7 +66,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. Install via Composer:
-   composer require emerson/ai-team-setup
+   composer require emerson-ph/ai-team-setup
 
 2. Publish files to project:
    php artisan ai-team:install
@@ -87,7 +87,7 @@
 2. ⏳ Copy the original AI Team Setup files to publish/ subdirectory
 3. ⏳ Create GitHub repository and push
 4. ⏳ Publish to Packagist.org
-5. ⏳ Users install with: composer require emerson/ai-team-setup
+5. ⏳ Users install with: composer require emerson-ph/ai-team-setup
 
 Read PACKAGE-SETUP.md for complete publishing instructions.
 
@@ -174,7 +174,7 @@ ai-team-scripts (Sync Scripts)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. In any Laravel project, users run:
-   composer require emerson/ai-team-setup
+   composer require emerson-ph/ai-team-setup
 
 2. Then run:
    php artisan ai-team:install
@@ -216,7 +216,7 @@ If you're the package maintainer:
 2. ⏳ Add the original AI files to publish/ directory
 3. ⏳ Create a GitHub repo and push this code
 4. ⏳ Go to packagist.org and submit your package
-5. ⏳ Users can then install with: composer require emerson/ai-team-setup
+5. ⏳ Users can then install with: composer require emerson-ph/ai-team-setup
 
 See PACKAGE-SETUP.md for detailed publishing instructions.
 

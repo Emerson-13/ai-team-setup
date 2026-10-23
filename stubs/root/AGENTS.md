@@ -27,12 +27,13 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - Validation in **Form Requests**. API output via **API Resources**. Never return raw models for an API contract.
 - Migration, Model, Request, Service, Resource, and Frontend must agree. No silent mismatches.
 - Do **not** import controllers with `use` in route files. Use fully qualified class references.
-- Web (Inertia) and API controllers call the **same Service**. Never duplicate business logic. No business logic in Vue.
+- Web (Inertia) and API controllers call the **same Service**. Never duplicate business logic. No business logic in Vue/React components or Blade.
 - Check **tenant isolation** and **authorization (policies)** on every endpoint and every broadcast channel. Authentication is not authorization.
 - **Roles and permissions** (docs/ai/ACCESS.md): admin side and client side are separate guards. Code checks **permissions** through `can()`/Policies, never role names (the Super Admin `Gate::before`, admin guard only, is the one exception). Super Admin never exists on the client side. Write a role matrix in the Team Brief first; no privilege escalation; audit every access change; never rely on hidden buttons.
 - Use **transactions** for multi-record consistency. Paginate lists. Avoid N+1. Index real query paths.
 - **Database is MySQL (InnoDB, utf8mb4). Never SQLite**, not for tests, not `:memory:`. Tests use a separate MySQL database (`*_testing`); E2E uses `*_e2e`. Follow docs/ai/TEAM.md Section 13.1 (MySQL has no transactional DDL; soft-delete uniqueness needs care; no Postgres-only SQL).
 - **Packages:** install nothing without the intake checklist and the setup block in docs/ai/PACKAGES.md. Realtime = **Laravel Reverb + Echo** (private tenant-scoped channels, `afterCommit`, a queue worker running). No abandoned packages.
+- **Frontend split** (TEAM.md Section 8.1): **public/SEO pages are Blade** (one layout, one SEO partial, sitemap, robots, `noindex` for the app). **For authenticated pages, ask the user once** which framework (Vue + Inertia suggested, React + Inertia, Livewire, separate SPA, other), unless the project already uses one. If you cannot ask, assume Vue + Inertia and record the assumption.
 - No fake features: no hardcoded arrays or mock logic unless a prototype was requested.
 - Do not add repositories, abstractions, or packages unless justified. Keep changes minimal and targeted; do not modify shared/reusable components unless required, and flag it if you do.
 
@@ -44,6 +45,7 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - **QA writes tests from acceptance criteria**, not by mirroring the implementation. Never delete or weaken a failing test to get green.
 - **Browser/E2E testing uses Playwright** (docs/ai/PLAYWRIGHT.md): main journey, validation failure, authorization denial per role, cross-tenant denial, cross-guard denial, realtime when applicable, against MySQL `*_e2e` only.
 - Run regression tests before and after changes.
+- **Show progress:** keep `docs/ai/progress.md` current (TEAM.md Section 3.2). For E2E, finish with the path of the Playwright HTML report and any traces; say so if the run was headless and unwatched.
 - Strategy recommendations are labeled Required / Recommended / Later and backed by Evidence or marked Hypothesis. Never invent market data, statistics, or quotes.
 
 ## Honesty
