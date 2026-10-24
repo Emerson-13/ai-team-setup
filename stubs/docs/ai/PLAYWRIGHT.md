@@ -223,6 +223,8 @@ npx playwright codegen http://127.0.0.1:8001             # draft locators (clean
 | Watch the real browser click and type | `npm run e2e:watch`. Slow it down: PowerShell `$env:E2E_WATCH=1; npm run e2e:watch`, bash `E2E_WATCH=1 npm run e2e:watch` (adds slow-motion and records trace, video and screenshots for every test) |
 | Review after the run | `npm run e2e:report` (HTML report), `npx playwright show-trace <trace.zip>` |
 
+| See what the agent is doing right now (commands, plan, stalls) | `npm run ai:board`, see `docs/ai/BOARD.md` |
+
 Headed and UI modes need a screen. In CI, a cloud sandbox, or an agent running in the background there is no window to watch; use the report, trace, and video instead. **At the end of every E2E run the QA Automation Engineer reports the HTML report path and the trace/video paths of failed tests, and says whether the run was headless.**
 
 ## 8.1 Preflight, stalls, and port conflicts
@@ -240,7 +242,7 @@ Headed and UI modes need a screen. In CI, a cloud sandbox, or an agent running i
 **Rules for agents:**
 
 - A command with **no output for 120 seconds** is stalled: stop it, run the doctor, and report `blocked` with the output. Do not wait longer and do not start the same command again.
-- Run Playwright from the shell with a hard time limit, for example `npm run e2e -- --reporter=line --timeout=60000 --global-timeout=900000`.
+- Run Playwright from the shell with a hard time limit, through the wrapper so the run is logged and a stall is stopped: `npm run ai:run -- npm run e2e -- --reporter=line --timeout=60000 --global-timeout=900000` (or `node docs/ai/board/wrap.mjs -- npm run e2e ...` if the `ai:run` script is missing).
 - Start nothing you cannot stop. If you start a server, you stop it when you finish.
 - Never kill a process you did not start without telling the user which process and port.
 - Never report "E2E passed" unless `npx playwright test` ran and printed its result. Otherwise: **Not Tested**, with the reason.

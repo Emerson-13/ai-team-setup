@@ -26,6 +26,7 @@ Companion documents (read them when the task touches their topic):
 | `docs/ai/PLAYWRIGHT.md` | Writing, running, or reviewing browser/E2E tests. Ready-to-copy templates are in `docs/ai/templates/playwright/`. |
 | `docs/ai/ACCESS.md` | Roles, permissions, admin panel, super admin, per-company roles, login areas, impersonation, or any "who can do what" question. Spatie setup for admin and client sides, role matrix, enforcement layers, tests. |
 | `docs/ai/PROTOCOL.md` | Delegating to agents or finishing any task: required agents, agent status (running/completed/timed_out/blocked), brief template, no-guessing rules, token discipline, the verify-and-fix loop. |
+| `docs/ai/BOARD.md` | Live agent board and plan progress: `node docs/ai/board/log.mjs` (plan, task, agent, finding, finish), `npm run ai:run -- <command>`, `npm run ai:board`. Register every plan and keep task status current. |
 | `docs/ai/PROMPTS.md` | Copy-paste prompts for features, bugs, refactors, reviews, roles, storage, AI features, resuming. |
 | `docs/ai/STORAGE.md` | Uploads, files, exports: one `StorageService`, cloud if configured, public-disk fallback, tenant paths. |
 | `docs/ai/UI.md` | Building or changing any screen: which UI kit or template to use (Tailwind-based by default), tokens, components first, required states. |
@@ -229,6 +230,7 @@ Updated: <time>   Mode/Size: <mode> / <size>   Stack: <authenticated frontend>
 ```
 
   The file is session state; add `docs/ai/progress.md` to `.gitignore`.
+- **Write it with `node docs/ai/board/log.mjs`** (`plan`, `task`, `agent`, `finding`, `next`, `finish`), not by hand: it rewrites `progress.md`, feeds the live board (`npm run ai:board`), and prints a `PROGRESS` line to show in every reply. Register the plan as soon as it exists and update each task as it changes (`docs/ai/PROTOCOL.md` Section 9, `docs/ai/BOARD.md`).
 
 ## 3.3 Handoff Contract
 

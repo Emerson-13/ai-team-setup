@@ -1,6 +1,6 @@
 # AI Team Setup for Laravel
 
-Gives your AI coding tools (Claude Code, Codex, Cursor, Copilot, Gemini, Windsurf, Cline) one shared set of rules for Laravel projects: an engineering team, a strategy council, roles and permissions, AI features through n8n, and Playwright E2E testing.
+Gives your AI coding tools (Claude Code, Codex, Cursor, Copilot, Gemini, Windsurf, Cline) one shared set of rules for Laravel projects: an engineering team, a strategy council, roles and permissions, AI features through n8n, Playwright E2E testing, and a live board that shows what the agents are doing and how far the plan is.
 
 **Requires:** PHP 8.1+, Laravel 10-13, MySQL 8 (not SQLite), Composer.
 
@@ -15,7 +15,8 @@ Then, once per project:
 
 1. **MySQL:** in `phpunit.xml` set `DB_CONNECTION=mysql` and `DB_DATABASE=app_testing`.
 2. **Read:** `docs/ai/TEAM.md` (the full playbook).
-3. **Optional:** Playwright (`docs/ai/PLAYWRIGHT.md`), packages (`docs/ai/PACKAGES.md`), n8n AI workflows (`docs/ai/N8N.md`).
+3. **Recommended:** the live board, `node docs/ai/board/setup.mjs` then `npm run ai:board` (`docs/ai/BOARD.md`).
+4. **Optional:** Playwright (`docs/ai/PLAYWRIGHT.md`), packages (`docs/ai/PACKAGES.md`), n8n AI workflows (`docs/ai/N8N.md`).
 
 The installer lists every file it copies and stops with an error if any is missing.
 
@@ -105,6 +106,7 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 | `STRATEGY.md` | Strategy Council protocol, Strategy Brief, marketing and SEO requirements |
 | `ACCESS.md` | Roles and permissions with Spatie: admin side and client side as separate guards, super admin, per-company roles, role matrix, tests |
 | `PROTOCOL.md` | Agent status (running / completed / timed out / blocked), required agents, brief template, no-guessing and token rules, verify-and-fix loop |
+| `BOARD.md` | Live board: plan and task progress, agent status, commands, stalls; Codex session reader; setup and troubleshooting |
 | `PROMPTS.md` | Copy-paste prompts: feature, bug, refactor, review, roles, storage, AI, resume |
 | `STORAGE.md` | Files and uploads through one `StorageService`: cloud if configured, public-disk fallback |
 | `UI.md` | Build screens from one ready-made UI kit or template (Tailwind-based by default), not custom CSS |
@@ -118,7 +120,19 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 |---|---|
 | `docs/ai/n8n/` | Import-ready n8n workflows (below) |
 | `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`), `test-doctor.php` (Pest/MySQL preflight) |
+| `docs/ai/board/` | The board scripts (Node, no dependencies): `log.mjs` (agents report plan, tasks, status), `wrap.mjs` (logs a command and stops a stalled one), `board.mjs` (dashboard), `codex.mjs` (reads Codex session files), `hook.mjs` (optional Claude Code hooks), `setup.mjs`, `doctor.mjs` |
 | `docs/ai/templates/playwright/` | `setup.mjs` (one-command setup), config (auto free port, Chrome/Edge fallback), `e2e:doctor` preflight, auth setup, seeder, smoke test, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
+
+### Live board (`docs/ai/board/`, guide: `docs/ai/BOARD.md`)
+
+```bash
+node docs/ai/board/setup.mjs     # once: npm scripts + .gitignore (add --claude-hooks for Claude Code)
+npm run ai:board                 # dashboard at http://127.0.0.1:4177 (VS Code: Simple Browser: Show)
+npm run ai:doctor                # preflight;  npm run ai:probe  shows what it can read from Codex on your machine
+npm run ai:run -- npm run e2e    # any heavy command: logged by the script, stopped if it stalls (exit 124)
+```
+
+Three layers, so you are not only relying on the agent to obey: **(1)** wrapped commands are logged by a script; **(2)** the tool's own record is read (Codex session files, or Claude Code hooks), including the tool's own plan; **(3)** agents report names, status and plan tasks with `node docs/ai/board/log.mjs` (`plan`, `task`, `agent`, `finding`, `finish`). Every report rewrites `docs/ai/progress.md` and prints a `PROGRESS 3/5 tasks (60%)` line the agent shows in its reply. Limits: you see status, steps and evidence, not private reasoning; in Codex the agent names are roles Codex plays, so only layers 1 and 2 are certain.
 
 ### n8n AI workflows (`docs/ai/n8n/`)
 
@@ -137,7 +151,7 @@ AGENTS.md  CLAUDE.md  GEMINI.md  README-AI-SETUP.md
 .claude/agents/  .claude/skills/laravel-team/
 .cursor/rules/laravel-team.mdc
 .github/copilot-instructions.md  .windsurfrules  .clinerules
-docs/ai/   (playbooks, templates, n8n workflows)
+docs/ai/   (playbooks, templates, n8n workflows, board scripts)
 sync-ai-files.sh  sync-ai-files.ps1
 ```
 
@@ -174,7 +188,7 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 - **AI features:** n8n webhooks called from a Laravel Service.
 - **Database:** MySQL only. **Tests:** Pest + Playwright. **Realtime:** Reverb + Echo.
 - **Playwright:** agents set it up themselves when E2E is needed (`setup.mjs`: packages, isolated `<app>_e2e` database, installed Chrome/Edge if the Chromium download is blocked, scripts, smoke test). You do not need to ask.
-- **Progress:** the agent keeps `docs/ai/progress.md` current (add it to `.gitignore`).
+- **Progress:** the agent registers every plan with `log.mjs` and keeps task status current; `docs/ai/progress.md` and the dashboard update from it (both git-ignored by `board/setup.mjs`). Heavy commands run through `npm run ai:run --`.
 
 ## Troubleshooting
 
@@ -184,6 +198,7 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 | `sync-ai-files.sh` permission denied | `chmod +x sync-ai-files.sh` |
 | Playwright or Pest stalls, or the port is busy | `npm run e2e:doctor` / `php docs/ai/templates/laravel/test-doctor.php` (see `PLAYWRIGHT.md` Section 8.1) |
 | Playwright is not set up, or Chromium cannot download | `node docs/ai/templates/playwright/setup.mjs` (falls back to installed Chrome/Edge; see `PLAYWRIGHT.md` Section 2.0) |
+| Dashboard shows no Codex activity, or a red "no activity" banner | `npm run ai:doctor`, `npm run ai:probe` (`docs/ai/BOARD.md` Section 6) |
 | Tool ignores the rules | Restart the editor or reload the window |
 | `rm -rf` fails in PowerShell | Use `Remove-Item -Recurse -Force <path>` |
 

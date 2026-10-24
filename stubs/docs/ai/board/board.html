@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Board</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1b1f27; --muted: #6a7282; --line: #e3e6ec;
+    --run: #2563eb; --ok: #16a34a; --bad: #dc2626; --warn: #d97706; --idle: #8b93a1;
+    --run-bg: #e8f0fe; --ok-bg: #e6f6ec; --bad-bg: #fde8e8; --warn-bg: #fdf1dc; --idle-bg: #eef0f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b2029; --ink: #e8ebf1; --muted: #98a1b2; --line: #2a303c;
+      --run: #6ea0ff; --ok: #4ade80; --bad: #f87171; --warn: #fbbf24; --idle: #8b93a1;
+      --run-bg: #1c2a47; --ok-bg: #16301f; --bad-bg: #3a1c1f; --warn-bg: #3a2c12; --idle-bg: #242a35;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 2; }
+  h1 { font-size: 16px; margin: 0; }
+  .muted { color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; }
+  .dot.off { background: var(--bad); }
+  main { padding: 16px 20px 40px; max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
+  .banner { padding: 12px 14px; border-radius: 8px; font-weight: 600; display: none; }
+  .banner.stalled { display: block; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); }
+  .banner.idle { display: block; background: var(--idle-bg); color: var(--muted); font-weight: 500; }
+  .banner.ok { display: block; background: var(--ok-bg); color: var(--ok); font-weight: 500; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  section > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .agent { border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; padding: 10px 12px; }
+  .agent.running { border-left-color: var(--run); } .agent.completed { border-left-color: var(--ok); }
+  .agent.blocked { border-left-color: var(--bad); } .agent.timed_out { border-left-color: var(--warn); }
+  .agent .name { font-weight: 600; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .chip.running, .chip.in_progress { background: var(--run-bg); color: var(--run); }
+  .chip.completed, .chip.done { background: var(--ok-bg); color: var(--ok); }
+  .chip.blocked { background: var(--bad-bg); color: var(--bad); }
+  .chip.timed_out, .chip.review { background: var(--warn-bg); color: var(--warn); }
+  .chip.pending { background: var(--idle-bg); color: var(--idle); }
+  .agent .doing { margin: 4px 0; } .agent .meta { font-size: 12px; color: var(--muted); }
+  .agent .needs { font-size: 12px; color: var(--bad); margin-top: 4px; }
+  .over { color: var(--warn); font-weight: 600; }
+  .progress { height: 10px; background: var(--idle-bg); border-radius: 99px; overflow: hidden; margin: 8px 0 12px; }
+  .progress > i { display: block; height: 100%; background: var(--ok); transition: width .4s; }
+  ul.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ul.tasks li { display: flex; gap: 8px; align-items: baseline; }
+  ul.tasks .id { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 28px; }
+  ul.tasks .note { color: var(--muted); font-size: 12px; }
+  ul.tasks li.done .t { text-decoration: line-through; color: var(--muted); }
+  .feed { max-height: 420px; overflow: auto; font-size: 13px; }
+  .row { display: grid; grid-template-columns: 62px 70px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .src { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); }
+  .src.s-codex { color: var(--run); } .src.s-wrap { color: var(--warn); } .src.s-hook { color: var(--ok); }
+  .txt { word-break: break-word; } .txt.bad { color: var(--bad); }
+  .filters { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .filters button { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 99px; padding: 2px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+  .filters button.on { background: var(--run-bg); border-color: var(--run); color: var(--run); }
+  .empty { color: var(--muted); font-style: italic; }
+  code { background: var(--idle-bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  @media (max-width: 560px) { .row { grid-template-columns: 54px 1fr; } .row .src { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI Board</h1>
+  <span class="muted" id="root"></span>
+  <span class="muted" style="margin-left:auto"><span class="dot" id="dot"></span><span id="sync">connecting...</span></span>
+</header>
+<main>
+  <div class="banner" id="banner"></div>
+  <section id="planSec"><h2>Plan and progress</h2><div id="plan"></div></section>
+  <section id="codexPlanSec" hidden><h2>Codex's own plan (live from the session)</h2><div id="codexPlan"></div></section>
+  <section><h2>Agents</h2><div class="grid" id="agents"></div></section>
+  <section id="cmdSec" hidden><h2>Commands running now</h2><div id="cmds"></div></section>
+  <section>
+    <h2>Activity</h2>
+    <div class="filters" id="filters"></div>
+    <div class="feed" id="feed"></div>
+    <p class="muted" id="srcNote" style="font-size:12px;margin:10px 0 0"></p>
+  </section>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  let state = null, failedAt = 0, filter = 'all', feedKey = '';
+  const fmt = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); const m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : m ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`; };
+  const clock = (iso) => new Date(iso).toLocaleTimeString([], { hour12: false });
+
+  function renderPlan(box, plan) {
+    box.replaceChildren();
+    if (!plan) { box.append(el('p', 'empty', 'No plan registered yet. The agent registers one with: node docs/ai/board/log.mjs plan "<title>" --task "<step> :: <role>"')); return; }
+    const s = plan.stats || (() => { const t = plan.tasks || plan.steps || []; const d = t.filter((x) => x.status === 'done').length; return { total: t.length, done: d, percent: t.length ? Math.round(d / t.length * 100) : 0 }; })();
+    const head = el('div'); head.style.cssText = 'display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap';
+    head.append(el('strong', '', plan.title || 'Plan'), el('span', 'muted', `${s.done}/${s.total} done (${s.percent}%)${plan.finishedAt ? ' - finished' : ''}${plan.source && plan.source !== 'agent' ? ` - from ${plan.source}` : ''}`));
+    const bar = el('div', 'progress'); const fill = el('i'); fill.style.width = `${s.percent}%`; bar.append(fill);
+    const ul = el('ul', 'tasks');
+    for (const t of (plan.tasks || plan.steps || [])) {
+      const li = el('li', t.status);
+      li.append(el('span', 'id', t.id || ''), el('span', `chip ${t.status}`, t.status.replace('_', ' ')));
+      const body = el('span'); body.append(el('span', 't', t.title));
+      if (t.owner) body.append(el('span', 'note', `  (${t.owner})`));
+      if (t.note) body.append(el('div', 'note', t.note));
+      li.append(body); ul.append(li);
+    }
+    box.append(head, bar, ul);
+    if (plan.next) box.append(el('p', 'muted', `Next: ${plan.next}`));
+    if ((plan.findings || []).length) { const f = el('p', 'muted', 'Findings: ' + plan.findings.map((x) => `${x.id} ${x.severity} (${x.state})`).join(', ')); box.append(f); }
+  }
+
+  function render() {
+    if (!state) return;
+    const now = Date.now(), skew = now - Date.parse(state.now);
+    $('root').textContent = state.root;
+    renderPlan($('plan'), state.plan);
+    $('codexPlanSec').hidden = !state.codexPlan;
+    if (state.codexPlan) renderPlan($('codexPlan'), { title: 'Codex plan', steps: state.codexPlan.steps.map((x, i) => ({ id: `S${i + 1}`, ...x })), source: 'codex' });
+
+    const ag = $('agents'); ag.replaceChildren();
+    if (!state.agents.length) ag.append(el('p', 'empty', 'No agent has reported. Agents report with: node docs/ai/board/log.mjs agent <name> running "<task>"'));
+    for (const a of state.agents) {
+      const c = el('div', `agent ${a.status}`);
+      const n = el('div', 'name'); n.append(el('span', '', a.name), el('span', `chip ${a.status}`, a.status.replace('_', ' ')));
+      c.append(n, el('div', 'doing', a.doing || ''));
+      const elapsed = a.status === 'running' ? now - Date.parse(a.startedAt) : a.elapsedMs;
+      const meta = el('div', 'meta', `${a.status === 'running' ? 'running for ' : 'took '}${fmt(elapsed)}`);
+      if (a.overBudget) meta.append(el('span', 'over', `  over the ${a.budgetMin || 10} min budget: mark it timed_out`));
+      c.append(meta);
+      if (a.needs) c.append(el('div', 'needs', `Needs: ${a.needs}`));
+      else if (a.evidence) c.append(el('div', 'meta', `Evidence: ${a.evidence}`));
+      ag.append(c);
+    }
+
+    $('cmdSec').hidden = !state.runningCommands.length;
+    const cm = $('cmds'); cm.replaceChildren();
+    for (const c of state.runningCommands) cm.append(el('div', '', `${c.text}  (${fmt(now - Date.parse(c.startedAt))}, ${c.agent})`));
+
+    const b = $('banner'); b.className = 'banner';
+    const q = state.quiet;
+    if (q.stalled) { b.classList.add('stalled'); b.textContent = `No activity for ${fmt((q.seconds + skew / 1000) * 1000)} while work is marked in progress. Possibly stalled: check the agent, run npm run e2e:doctor, and do not restart the same command blindly.`; }
+    else if (q.active) { b.classList.add('ok'); b.textContent = `Working. Last activity ${q.seconds === null ? '-' : fmt(q.seconds * 1000)} ago.`; }
+    else { b.classList.add('idle'); b.textContent = 'Idle: nothing is running right now.'; }
+
+    const sources = ['all', ...new Set(state.events.map((e) => e.source))];
+    const fl = $('filters'); fl.replaceChildren();
+    for (const s of sources) { const bt = el('button', s === filter ? 'on' : '', s); bt.onclick = () => { filter = s; render(); }; fl.append(bt); }
+    const feed = $('feed');
+    const list = state.events.filter((e) => filter === 'all' || e.source === filter);
+    const key = `${filter}|${list.length}|${list[0] ? list[0].ts + list[0].text : ''}`;
+    if (key !== feedKey) { feedKey = key; feed.replaceChildren(); } else list.length = 0; // unchanged: keep scroll position
+    if (!state.events.length) feed.append(el('p', 'empty', 'No activity yet.'));
+    for (const e of list) {
+      const r = el('div', 'row');
+      const bad = /FAILED|STALLED|TIMED OUT|blocked|error|timed_out/i.test(`${e.kind} ${e.text}`);
+      r.append(el('span', 'muted', clock(e.ts)), el('span', `src s-${e.source}`, e.source), el('span', `txt${bad ? ' bad' : ''}`, `${e.agent && e.source !== 'codex' ? `[${e.agent}] ` : ''}${e.text}`));
+      feed.append(r);
+    }
+    const cx = state.codex;
+    $('srcNote').textContent = `Sources: agent reports (log.mjs), wrapped commands (ai:run), Claude hooks, and Codex session files (${cx.found ? `${cx.sessions} session(s) for this project` : 'not found on this machine; run npm run ai:probe'}).`;
+  }
+
+  async function tick() {
+    try {
+      const r = await fetch('/api/state', { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      state = await r.json(); failedAt = 0;
+      $('dot').className = 'dot'; $('sync').textContent = `live ${new Date().toLocaleTimeString([], { hour12: false })}`;
+    } catch { failedAt ||= Date.now(); $('dot').className = 'dot off'; $('sync').textContent = 'board stopped? (run npm run ai:board)'; }
+    render();
+  }
+  tick(); setInterval(tick, 2000);
+  setInterval(render, 1000); // keeps the timers moving between polls
+})();
+</script>
+</body>
+</html>

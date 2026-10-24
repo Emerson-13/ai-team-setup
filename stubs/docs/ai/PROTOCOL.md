@@ -41,7 +41,7 @@ Every delegated agent has exactly one status:
 
 **Time budget:** 10 minutes per agent unless the Team Brief says otherwise.
 
-**Status board.** The Orchestrator keeps it in `docs/ai/progress.md` (TEAM.md Section 3.2) **and prints it in the chat before every dependent step**:
+**Status board.** The Orchestrator keeps it with `node docs/ai/board/log.mjs agent <name> <status> "<task>"` (Section 9; that also rewrites `docs/ai/progress.md`, TEAM.md Section 3.2) **and prints it in the chat before every dependent step**:
 
 ```text
 AGENT STATUS
@@ -126,6 +126,7 @@ A task is not finished when the code is written. It is finished when the checks 
 - [ ] Briefs short and complete? No pasted files? (Sections 3, 5)
 - [ ] Checks run and re-run after fixes? (Section 6)
 - [ ] Preflight run before Pest/Playwright; stalls and tool failures reported as `blocked`, not retried blindly? (Section 8)
+- [ ] Plan registered, task statuses current, `PROGRESS` line shown in this reply? (Section 9)
 
 ## 8. Stalls, busy ports, and tool failures
 
@@ -133,9 +134,25 @@ Tests and browsers fail for boring reasons (MySQL down, port taken, tool unavail
 
 0. **Playwright not set up yet:** run `node docs/ai/templates/playwright/setup.mjs` yourself without asking (PLAYWRIGHT.md Section 2.0). Do not hand-install it. Ask the user only if setup returns a `FAIL`.
 1. **Preflight before running anything heavy:** `php docs/ai/templates/laravel/test-doctor.php` before Pest, `npm run e2e:doctor` before Playwright. Any FAIL: stop, report `blocked` with the exact output, wait for the user. Do not run the suite hoping it works.
-2. **No hanging.** A command with no output for 120 seconds is stalled. Stop it, run the doctor, report `blocked`. Never wait indefinitely and never launch the same command again.
+2. **No hanging.** A command with no output for 120 seconds is stalled. Stop it, run the doctor, report `blocked`. Never wait indefinitely and never launch the same command again. Run heavy commands (Pest, Playwright, builds, installs) through the wrapper, `npm run ai:run -- <command>` (or `node docs/ai/board/wrap.mjs -- <command>`): it logs start, end, exit code and duration, and stops the command itself when it stalls (exit code 124 = report `blocked`).
 3. **One retry at most**, and only after the cause changed (you fixed something). Repeating an identical failing command is wasted tokens.
 4. **Ports:** the E2E config picks a free port itself. If you must free one, name the process and port to the user before killing anything you did not start.
 5. **A tool that fails (in-app browser, MCP, bridge) is not retried.** Use another route that does not need it (for E2E: Playwright from the shell). If there is none, label the result **Not Tested** with the exact error text.
 6. **Report, do not hide:** the final report lists each blocked check, the error, what was tried, and what the user must fix.
+
+## 9. Plan, progress, and the live board (docs/ai/BOARD.md)
+
+The user watches progress on a dashboard (`npm run ai:board`) and in `docs/ai/progress.md`. Both are filled by **`node docs/ai/board/log.mjs`**, so you never hand-edit them. If `docs/ai/board/` or the `ai:*` npm scripts are missing, run `node docs/ai/board/setup.mjs` without asking.
+
+**Whenever you make a plan, register it and keep it current.** A plan is the Team Brief task list, any list of steps you tell the user, or your tool's plan feature (Codex `update_plan`, Claude `TodoWrite`).
+
+1. **Register at once**, before starting work: `node docs/ai/board/log.mjs plan "<title>" --task "<step> :: <role>" --task "..." --mode "<mode>" --size <XS-XL>`. XS/S work with fewer than 3 steps needs no plan.
+2. **Update at every change, not in a batch.** Before starting a task: `log.mjs task T2 in_progress "<what>"`. Right after its check passes: `log.mjs task T2 done "<evidence: test, file, command>"`. If stuck: `log.mjs task T2 blocked "<exactly what is missing>"`. Plan changes: `log.mjs add "<step>"` (never silently drop a task).
+3. **Agents** (Section 2): `log.mjs agent <name> running "<task>"` at launch; `completed` (with `--evidence`), `blocked` (with `--needs`) or `timed_out` at the end. After `blocked` or `timed_out`, stop and ask the user (Section 2 gate).
+4. **Show it in chat.** Every `log.mjs` command prints one `PROGRESS ...` line. Put the latest one at the top of every reply while a plan is open and in the final report, so the user sees progress even without the dashboard.
+5. **Findings and next step:** `log.mjs finding <severity> "<text>"`, `log.mjs next "<one line>"`.
+6. **Finish honestly:** run `log.mjs finish`. It refuses while a task, agent, or critical/high finding is still open. Fix them, or list them in the final report as not done and use `--force`. Never mark a task `done` without evidence, and never mark it `done` because you intend to do it.
+7. **Run heavy commands through the wrapper** (Section 8, point 2). That layer does not depend on you remembering.
+
+What the board can and cannot show: commands, edits, exit codes, durations, stalls, and Codex's/Claude's own plan are read from logs or written by scripts. Agent names and statuses are self-reported by you, so report them truthfully. The board never shows private reasoning.
 
