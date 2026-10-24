@@ -4,7 +4,7 @@
 //   npm run ai:run -- npm run e2e
 //   npm run ai:run -- php artisan test
 //   node docs/ai/board/wrap.mjs --stall 180 --label "pest orders" -- php artisan test --filter=Order
-// Options: --agent <name> (default $AI_AGENT or "agent")  --label <text>  --stall <sec, default 120, 0 = off>  --timeout <sec, 0 = off>
+// Options: --agent <name> (default $AI_BOARD_AGENT or "agent")  --label <text>  --stall <sec, default 120, 0 = off>  --timeout <sec, 0 = off>
 // Exit code is the command's own. 124 = stalled or timed out (reported as BLOCKED; do not run the same command again).
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -27,8 +27,14 @@ if (!command.length) {
   process.exit(2);
 }
 
-const agent = opts.agent || process.env.AI_AGENT || 'agent';
-const stallSec = opts.stall === undefined ? DEFAULT_STALL_SEC : Number(opts.stall);
+if (process.env.AI_WRAPPED) {
+  // Already inside a wrapper (for example `npm run ai:run -- npm run e2e`, where e2e is wrapped too): just run it, the outer one logs.
+  const r = spawnSync(command.length === 1 ? command[0] : command.map((a) => (/[\s"'&|<>^]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)).join(' '), { shell: true, stdio: 'inherit' });
+  process.exit(r.status ?? 1);
+}
+
+const agent = opts.agent || process.env.AI_BOARD_AGENT || 'agent';
+const stallSec = opts.stall === undefined ? (process.env.CI ? 0 : DEFAULT_STALL_SEC) : Number(opts.stall); // CI runs are not watched by an agent
 const timeoutSec = opts.timeout === undefined ? 0 : Number(opts.timeout);
 const q = (a) => (/[\s"'&|<>^]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a);
 const text = command.length === 1 ? command[0] : command.map(q).join(' ');
@@ -40,7 +46,7 @@ const win = process.platform === 'win32';
 appendEvent({ source: 'wrap', agent, type: 'command_start', id, text: label, data: { command: clip(text, 500), stallSec, timeoutSec } });
 console.error(`[ai:run ${id}] ${clip(text, 160)}`);
 
-const child = spawn(text, { shell: true, detached: !win, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true });
+const child = spawn(text, { shell: true, detached: !win, stdio: ['inherit', 'pipe', 'pipe'], windowsHide: true, env: { ...process.env, AI_WRAPPED: '1' } });
 let lastOutput = Date.now();
 const tail = [];
 const keep = (chunk) => {

@@ -242,7 +242,7 @@ Headed and UI modes need a screen. In CI, a cloud sandbox, or an agent running i
 **Rules for agents:**
 
 - A command with **no output for 120 seconds** is stalled: stop it, run the doctor, and report `blocked` with the output. Do not wait longer and do not start the same command again.
-- Run Playwright from the shell with a hard time limit, through the wrapper so the run is logged and a stall is stopped: `npm run ai:run -- npm run e2e -- --reporter=line --timeout=60000 --global-timeout=900000` (or `node docs/ai/board/wrap.mjs -- npm run e2e ...` if the `ai:run` script is missing).
+- Run Playwright from the shell with a hard time limit. `npm run e2e` is already wrapped (logged, and a stall is stopped; the original command is `npm run e2e:raw`); pass limits after `--`: `npm run e2e -- --reporter=line --timeout=60000 --global-timeout=900000`. Older form: `npm run ai:run -- npm run e2e -- --reporter=line --timeout=60000 --global-timeout=900000` (or `node docs/ai/board/wrap.mjs -- npm run e2e ...` if the `ai:run` script is missing).
 - Start nothing you cannot stop. If you start a server, you stop it when you finish.
 - Never kill a process you did not start without telling the user which process and port.
 - Never report "E2E passed" unless `npx playwright test` ran and printed its result. Otherwise: **Not Tested**, with the reason.

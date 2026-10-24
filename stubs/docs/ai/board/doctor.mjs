@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Preflight for the AI board. Run: npm run ai:doctor
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT, STATE_DIR, FILES, ensureDirs, readJson } from './lib.mjs';
 import { codexHomes, listRollouts, readFirstLine, sameProject } from './codex.mjs';
@@ -14,7 +15,7 @@ console.log('AI board preflight\n');
 
 Number(process.versions.node.split('.')[0]) >= 18 ? ok(`Node ${process.versions.node}`) : fail(`Node ${process.versions.node} is too old`, 'install Node 18 or newer');
 
-for (const f of ['lib.mjs', 'log.mjs', 'wrap.mjs', 'board.mjs', 'board.html', 'codex.mjs', 'hook.mjs']) {
+for (const f of ['lib.mjs', 'log.mjs', 'wrap.mjs', 'board.mjs', 'board.html', 'codex.mjs', 'hook.mjs', 'watch.mjs', 'setup.mjs']) {
   existsSync(join(ROOT, 'docs/ai/board', f)) ? null : fail(`docs/ai/board/${f} is missing`, 'run: php artisan ai-team:install --docs');
 }
 ok('board scripts present');
@@ -30,9 +31,22 @@ for (const [name, f] of [['plan.json', FILES.plan], ['agents.json', FILES.agents
 // package.json scripts
 try {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-  const need = ['ai:board', 'ai:log', 'ai:run', 'ai:doctor', 'ai:probe'].filter((s) => !pkg.scripts?.[s]);
-  need.length ? warn(`package.json is missing scripts: ${need.join(', ')}. Run: node docs/ai/board/setup.mjs (agents can still call node docs/ai/board/log.mjs directly)`) : ok('npm scripts ai:board, ai:log, ai:run, ai:doctor, ai:probe');
+  const need = ['ai:board', 'ai:log', 'ai:run', 'ai:doctor', 'ai:probe', 'ai:test'].filter((s) => !pkg.scripts?.[s]);
+  need.length ? warn(`package.json is missing scripts: ${need.join(', ')}. Run: node docs/ai/board/setup.mjs (agents can still call node docs/ai/board/log.mjs directly)`) : ok('npm scripts ai:board, ai:log, ai:run, ai:doctor, ai:probe, ai:test');
 } catch { warn('package.json not found or not readable'); }
+
+// logged scripts
+try {
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  if (pkg.scripts?.e2e) /wrap\.mjs/.test(pkg.scripts.e2e) ? ok('npm run e2e is logged by the board (not by the agent\'s memory)') : warn('npm run e2e is not logged. Run: node docs/ai/board/setup.mjs');
+} catch { /* already reported above */ }
+
+// Codex approval rule: without it Codex may ask approval for every log command and logging gets skipped
+try {
+  const rules = join(process.env.CODEX_HOME || join(homedir(), '.codex'), 'rules');
+  const has = existsSync(rules) && readdirSync(rules).some((f) => f.endsWith('.rules') && /docs\/ai\/board\/log\.mjs/.test(readFileSync(join(rules, f), 'utf8')));
+  has ? ok('Codex rule allows log.mjs without an approval prompt') : console.log('  info  If Codex asks approval for each log command (so logging gets skipped), run: node docs/ai/board/setup.mjs --codex-rules');
+} catch { /* ignore */ }
 
 // .gitignore
 const gi = existsSync(join(ROOT, '.gitignore')) ? readFileSync(join(ROOT, '.gitignore'), 'utf8') : '';

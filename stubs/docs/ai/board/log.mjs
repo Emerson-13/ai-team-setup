@@ -14,7 +14,7 @@
 // Every command rewrites docs/ai/progress.md and prints one PROGRESS line you can paste into your reply.
 import {
   AGENT_STATUS, TASK_STATUS, DEFAULT_BUDGET_MIN, appendEvent, clip, loadAgents, loadPlan, nowIso, parseArgs,
-  saveAgents, savePlan, stats, summaryLine, syncProgress, withLock, FILES,
+  saveAgents, savePlan, stats, readEvents, summaryLine, syncProgress, withLock, FILES,
 } from './lib.mjs';
 import { rmSync } from 'node:fs';
 
@@ -22,7 +22,7 @@ const { pos, flags } = parseArgs(process.argv.slice(2), ['task', 'mode', 'size',
 const [cmd, ...rest] = pos;
 const one = (v) => (Array.isArray(v) ? v[v.length - 1] : v);
 const die = (m) => { console.error(`log.mjs: ${m}`); process.exit(2); };
-const who = process.env.AI_AGENT || 'orchestrator';
+const who = process.env.AI_BOARD_AGENT || 'orchestrator';
 
 function emit(type, text, extra = {}) { appendEvent({ source: 'agent', agent: who, type, text, ...extra }); }
 function done(plan, agents, extraLines = []) {
@@ -183,6 +183,9 @@ switch (cmd) {
         console.log(summaryLine(plan, agents));
         process.exit(1);
       }
+      const evs = readEvents(1000000);
+      const by = (src) => evs.filter((e) => (e.source || 'agent') === src).length;
+      console.log(`LOG COVERAGE: ${by('agent')} agent reports, ${by('wrap')} wrapped-command events, ${by('hook')} hook events. Put this in the final report; if agent reports is 0 the dashboard was not kept current.`);
       plan.finishedAt = nowIso();
       if (rest.length) plan.next = clip(rest.join(' '), 200);
       savePlan(plan);

@@ -80,6 +80,11 @@ const wanted = {
   'e2e:doctor': 'node tests/e2e/support/doctor.mjs',
   'build:e2e': 'vite build --mode e2e',
 };
+// When the AI board is installed, `npm run e2e` is logged by a script (start, end, exit code, stall), not by the agent's memory.
+if (existsSync(join(root, 'docs/ai/board/wrap.mjs'))) {
+  wanted['e2e:raw'] = 'playwright test';
+  wanted.e2e = 'node docs/ai/board/wrap.mjs --agent qa-playwright --label e2e -- npm run e2e:raw --';
+}
 for (const [name, cmd] of Object.entries(wanted)) {
   if (pkg.scripts[name] && !force) skip(`script ${name} exists`);
   else if (name === 'build:e2e' && !pkg.scripts.build) skip('build:e2e (no Vite build script in this project)');

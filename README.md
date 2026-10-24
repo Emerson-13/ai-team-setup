@@ -120,19 +120,20 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 |---|---|
 | `docs/ai/n8n/` | Import-ready n8n workflows (below) |
 | `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`), `test-doctor.php` (Pest/MySQL preflight) |
-| `docs/ai/board/` | The board scripts (Node, no dependencies): `log.mjs` (agents report plan, tasks, status), `wrap.mjs` (logs a command and stops a stalled one), `board.mjs` (dashboard), `codex.mjs` (reads Codex session files), `hook.mjs` (optional Claude Code hooks), `setup.mjs`, `doctor.mjs` |
+| `docs/ai/board/` | The board scripts (Node, no dependencies): `log.mjs` (agents report plan, tasks, status), `wrap.mjs` (logs a command and stops a stalled one), `board.mjs` (dashboard), `codex.mjs` (reads Codex session files), `watch.mjs` (sees file edits), `hook.mjs` (optional Claude Code hooks), `setup.mjs`, `doctor.mjs` |
 | `docs/ai/templates/playwright/` | `setup.mjs` (one-command setup), config (auto free port, Chrome/Edge fallback), `e2e:doctor` preflight, auth setup, seeder, smoke test, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
 
 ### Live board (`docs/ai/board/`, guide: `docs/ai/BOARD.md`)
 
 ```bash
-node docs/ai/board/setup.mjs     # once: npm scripts + .gitignore (add --claude-hooks for Claude Code)
+node docs/ai/board/setup.mjs     # once: npm scripts + .gitignore; logs npm run e2e (add --codex-rules for Codex, --claude-hooks for Claude Code)
 npm run ai:board                 # dashboard at http://127.0.0.1:4177 (VS Code: Simple Browser: Show)
 npm run ai:doctor                # preflight;  npm run ai:probe  shows what it can read from Codex on your machine
-npm run ai:run -- npm run e2e    # any heavy command: logged by the script, stopped if it stalls (exit 124)
+npm run ai:test                  # Pest, logged by the script;  npm run e2e is logged too
+npm run ai:run -- <command>      # any other heavy command: logged, stopped if it stalls (exit 124)
 ```
 
-Three layers, so you are not only relying on the agent to obey: **(1)** wrapped commands are logged by a script; **(2)** the tool's own record is read (Codex session files, or Claude Code hooks), including the tool's own plan; **(3)** agents report names, status and plan tasks with `node docs/ai/board/log.mjs` (`plan`, `task`, `agent`, `finding`, `finish`). Every report rewrites `docs/ai/progress.md` and prints a `PROGRESS 3/5 tasks (60%)` line the agent shows in its reply. Limits: you see status, steps and evidence, not private reasoning; in Codex the agent names are roles Codex plays, so only layers 1 and 2 are certain.
+The dashboard fits one screen (no scrolling), has dark and light mode, and a clickable **node map** of plan, agents and commands (drag, scroll to zoom, click a node). An **"Is it logging?"** panel and an amber banner tell you when the agent is working but not logging, with a button that copies a reminder to paste to it. Four layers, so you are not only relying on the agent to obey: **(0)** file edits are seen by a watcher; **(1)** wrapped commands (`npm run e2e`, `npm run ai:test`) are logged by a script; **(2)** the tool's own record is read (Codex session files, or Claude Code hooks), including the tool's own plan; **(3)** agents report names, status and plan tasks with `node docs/ai/board/log.mjs` (`plan`, `task`, `agent`, `finding`, `finish`). Every report rewrites `docs/ai/progress.md` and prints a `PROGRESS 3/5 tasks (60%)` line the agent shows in its reply. Limits: you see status, steps and evidence, not private reasoning; in Codex the agent names are roles Codex plays, so only layers 1 and 2 are certain.
 
 ### n8n AI workflows (`docs/ai/n8n/`)
 

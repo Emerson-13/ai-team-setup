@@ -152,7 +152,9 @@ The user watches progress on a dashboard (`npm run ai:board`) and in `docs/ai/pr
 4. **Show it in chat.** Every `log.mjs` command prints one `PROGRESS ...` line. Put the latest one at the top of every reply while a plan is open and in the final report, so the user sees progress even without the dashboard.
 5. **Findings and next step:** `log.mjs finding <severity> "<text>"`, `log.mjs next "<one line>"`.
 6. **Finish honestly:** run `log.mjs finish`. It refuses while a task, agent, or critical/high finding is still open. Fix them, or list them in the final report as not done and use `--force`. Never mark a task `done` without evidence, and never mark it `done` because you intend to do it.
-7. **Run heavy commands through the wrapper** (Section 8, point 2). That layer does not depend on you remembering.
+7. **Run heavy commands through the wrapper** (Section 8, point 2): `npm run ai:test` for Pest, `npm run e2e` for Playwright (wrapped by setup), `npm run ai:run -- <command>` for anything else. That layer does not depend on you remembering.
+8. **Never skip a log silently.** A plan, task change or agent launch is not done until its `log.mjs` line has run. If `log.mjs` is refused (approval prompt), errors, or `docs/ai/state/` is not writable: say `blocked: logging unavailable`, quote the exact error, and stop. Do not continue the task and do not hand-edit `progress.md`.
+9. **The user can see when you do not log.** The dashboard compares your reports with the work it sees (Codex session, file edits, wrapped commands) and shows **Agent not logging** when they diverge. `log.mjs finish` prints `LOG COVERAGE`: include it in the final report.
 
 What the board can and cannot show: commands, edits, exit codes, durations, stalls, and Codex's/Claude's own plan are read from logs or written by scripts. Agent names and statuses are self-reported by you, so report them truthfully. The board never shows private reasoning.
 

@@ -3,179 +3,540 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
 <title>AI Board</title>
 <style>
-  :root {
-    --bg: #f6f7f9; --card: #ffffff; --ink: #1b1f27; --muted: #6a7282; --line: #e3e6ec;
-    --run: #2563eb; --ok: #16a34a; --bad: #dc2626; --warn: #d97706; --idle: #8b93a1;
-    --run-bg: #e8f0fe; --ok-bg: #e6f6ec; --bad-bg: #fde8e8; --warn-bg: #fdf1dc; --idle-bg: #eef0f4;
+  :root, :root[data-theme="dark"] {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2230; --ink: #e6edf3; --muted: #8b949e; --line: #2d333b;
+    --run: #58a6ff; --ok: #3fb950; --bad: #f85149; --warn: #d29922; --idle: #6e7681;
+    --run-bg: #12233d; --ok-bg: #12261a; --bad-bg: #351a1d; --warn-bg: #33270e; --idle-bg: #21262d;
+    --edge: #3b4350; --shadow: 0 6px 24px rgba(0,0,0,.45);
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12151b; --card: #1b2029; --ink: #e8ebf1; --muted: #98a1b2; --line: #2a303c;
-      --run: #6ea0ff; --ok: #4ade80; --bad: #f87171; --warn: #fbbf24; --idle: #8b93a1;
-      --run-bg: #1c2a47; --ok-bg: #16301f; --bad-bg: #3a1c1f; --warn-bg: #3a2c12; --idle-bg: #242a35;
-    }
+  :root[data-theme="light"] {
+    --bg: #f3f5f8; --panel: #ffffff; --panel2: #f8fafc; --ink: #1b1f27; --muted: #5d6676; --line: #dfe3ea;
+    --run: #1f6feb; --ok: #1a7f37; --bad: #cf222e; --warn: #9a6700; --idle: #6e7781;
+    --run-bg: #e6f0ff; --ok-bg: #e3f5e8; --bad-bg: #fde8ea; --warn-bg: #fdf1d6; --idle-bg: #eceff3;
+    --edge: #b6bdc9; --shadow: 0 6px 20px rgba(20,30,50,.18);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 2; }
-  h1 { font-size: 16px; margin: 0; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  button { font: inherit; color: inherit; }
   .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+
+  /* header */
+  header { display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); min-height: 46px; }
+  h1 { font-size: 15px; margin: 0; letter-spacing: .01em; }
+  .proj { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .overall { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 160px; max-width: 360px; }
+  .bar { flex: 1; height: 8px; border-radius: 99px; background: var(--idle-bg); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--ok); transition: width .4s; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+  .pill { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--idle-bg); color: var(--muted); white-space: nowrap; border: 1px solid transparent; }
+  .pill.run { background: var(--run-bg); color: var(--run); } .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); } .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .iconbtn { border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; padding: 3px 9px; cursor: pointer; }
+  .iconbtn:hover { border-color: var(--run); }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; }
   .dot.off { background: var(--bad); }
-  main { padding: 16px 20px 40px; max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
-  .banner { padding: 12px 14px; border-radius: 8px; font-weight: 600; display: none; }
-  .banner.stalled { display: block; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); }
-  .banner.idle { display: block; background: var(--idle-bg); color: var(--muted); font-weight: 500; }
-  .banner.ok { display: block; background: var(--ok-bg); color: var(--ok); font-weight: 500; }
-  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  section > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
-  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-  .agent { border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; padding: 10px 12px; }
-  .agent.running { border-left-color: var(--run); } .agent.completed { border-left-color: var(--ok); }
-  .agent.blocked { border-left-color: var(--bad); } .agent.timed_out { border-left-color: var(--warn); }
-  .agent .name { font-weight: 600; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
-  .chip.running, .chip.in_progress { background: var(--run-bg); color: var(--run); }
-  .chip.completed, .chip.done { background: var(--ok-bg); color: var(--ok); }
-  .chip.blocked { background: var(--bad-bg); color: var(--bad); }
-  .chip.timed_out, .chip.review { background: var(--warn-bg); color: var(--warn); }
-  .chip.pending { background: var(--idle-bg); color: var(--idle); }
-  .agent .doing { margin: 4px 0; } .agent .meta { font-size: 12px; color: var(--muted); }
-  .agent .needs { font-size: 12px; color: var(--bad); margin-top: 4px; }
-  .over { color: var(--warn); font-weight: 600; }
-  .progress { height: 10px; background: var(--idle-bg); border-radius: 99px; overflow: hidden; margin: 8px 0 12px; }
-  .progress > i { display: block; height: 100%; background: var(--ok); transition: width .4s; }
-  ul.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  ul.tasks li { display: flex; gap: 8px; align-items: baseline; }
-  ul.tasks .id { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 28px; }
-  ul.tasks .note { color: var(--muted); font-size: 12px; }
-  ul.tasks li.done .t { text-decoration: line-through; color: var(--muted); }
-  .feed { max-height: 420px; overflow: auto; font-size: 13px; }
-  .row { display: grid; grid-template-columns: 62px 70px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-  .row:last-child { border-bottom: 0; }
-  .src { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); }
-  .src.s-codex { color: var(--run); } .src.s-wrap { color: var(--warn); } .src.s-hook { color: var(--ok); }
-  .txt { word-break: break-word; } .txt.bad { color: var(--bad); }
-  .filters { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-  .filters button { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 99px; padding: 2px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+  :focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
+
+  /* alert */
+  #alert { display: none; padding: 7px 14px; font-weight: 600; border-bottom: 1px solid var(--line); gap: 12px; align-items: center; }
+  #alert.show { display: flex; }
+  #alert.bad { background: var(--bad-bg); color: var(--bad); } #alert.warn { background: var(--warn-bg); color: var(--warn); }
+  #alert .grow { flex: 1; font-weight: 600; }
+  #alert button { border: 1px solid currentColor; background: transparent; border-radius: 6px; padding: 2px 10px; cursor: pointer; font-weight: 600; }
+
+  /* main grid: everything is visible without page scroll */
+  main { flex: 1; display: grid; gap: 10px; padding: 10px; min-height: 0; grid-template-columns: minmax(0, 1fr) 370px; grid-template-rows: minmax(0, 1fr) clamp(190px, 24vh, 300px); grid-template-areas: "map side" "feed side"; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .panel > h2 { margin: 0; padding: 8px 12px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .body { padding: 0 12px 10px; flex: 1; min-height: 0; overflow: hidden; }
+  #mapPanel { grid-area: map; position: relative; } #feedPanel { grid-area: feed; }
+  #side { grid-area: side; display: grid; gap: 10px; grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr) auto; min-height: 0; }
+
+  /* node map */
+  #mapWrap { position: relative; flex: 1; min-height: 0; background: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.2px) 0 0 / 22px 22px; }
+  #svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; user-select: none; }
+  #svg.drag { cursor: grabbing; }
+  .edge { fill: none; stroke: var(--edge); stroke-width: 2; }
+  .edge.dash { stroke-dasharray: 4 4; stroke-width: 1.5; }
+  .edge.live { stroke: var(--run); stroke-dasharray: 7 6; animation: flow 1s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -26; } }
+  .node { cursor: pointer; outline: none; }
+  .node rect.box { fill: var(--panel2); stroke: var(--line); stroke-width: 1.5; }
+  .node:hover rect.box, .node:focus-visible rect.box { stroke: var(--run); }
+  .node.sel rect.box { stroke: var(--run); stroke-width: 3; }
+  .node .stripe { fill: var(--idle); }
+  .node.running .stripe, .node.in_progress .stripe { fill: var(--run); } .node.done .stripe, .node.completed .stripe, .node.ok .stripe { fill: var(--ok); }
+  .node.blocked .stripe, .node.failed .stripe, .node.stalled .stripe { fill: var(--bad); } .node.timed_out .stripe, .node.review .stripe { fill: var(--warn); }
+  .node.blocked rect.box, .node.failed rect.box, .node.stalled rect.box { stroke: var(--bad); }
+  .node.running rect.box, .node.in_progress rect.box { stroke: var(--run); }
+  .node.running rect.box, .node.in_progress rect.box { animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 50% { stroke-opacity: .35; } }
+  .node.dim { opacity: .42; }
+  .node text { fill: var(--ink); pointer-events: none; }
+  .node .ttl { font-size: 12.5px; font-weight: 600; } .node .sub { font-size: 10.5px; fill: var(--muted); }
+  .node .ico { font-size: 14px; font-weight: 700; }
+  .node.running .ico, .node.in_progress .ico { fill: var(--run); } .node.done .ico, .node.completed .ico, .node.ok .ico { fill: var(--ok); }
+  .node.blocked .ico, .node.failed .ico, .node.stalled .ico { fill: var(--bad); } .node.timed_out .ico, .node.review .ico { fill: var(--warn); } .node.pending .ico { fill: var(--idle); }
+  .node.root rect.box { fill: var(--panel); }
+  .node.ghost rect.box { stroke-dasharray: 5 4; }
+  .hint { position: absolute; inset: 0; display: flex; align-items: flex-end; padding-bottom: 36px !important; justify-content: center; pointer-events: none; text-align: center; padding: 24px; color: var(--muted); }
+  .hint div { max-width: 56ch; }
+  .tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+  .legend { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); display: flex; gap: 10px; background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line); }
+  #detail { position: absolute; left: 10px; bottom: 10px; width: min(320px, calc(100% - 20px)); max-height: calc(100% - 20px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 10px 12px; display: none; }
+  #detail.show { display: block; }
+  #detail h3 { margin: 0 24px 4px 0; font-size: 13.5px; } #detail dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 12px; }
+  #detail dt { color: var(--muted); } #detail dd { margin: 0; word-break: break-word; }
+  #detail .x { position: absolute; top: 6px; right: 8px; border: 0; background: transparent; cursor: pointer; font-size: 16px; color: var(--muted); }
+  #detail pre { margin: 6px 0 0; padding: 6px 8px; background: var(--idle-bg); border-radius: 6px; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 110px; overflow: auto; }
+
+  /* chips */
+  .chip { font-size: 10.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; white-space: nowrap; background: var(--idle-bg); color: var(--idle); }
+  .chip.running, .chip.in_progress { background: var(--run-bg); color: var(--run); } .chip.completed, .chip.done, .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.blocked, .chip.failed, .chip.stalled { background: var(--bad-bg); color: var(--bad); } .chip.timed_out, .chip.review { background: var(--warn-bg); color: var(--warn); }
+
+  /* lists */
+  .list { display: grid; gap: 4px; align-content: start; }
+  .item { display: grid; grid-template-columns: auto auto 1fr auto; gap: 8px; align-items: center; padding: 3px 6px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .item:hover { background: var(--panel2); border-color: var(--line); } .item.sel { border-color: var(--run); background: var(--run-bg); }
+  .item .id { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 24px; }
+  .item .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .item.done .t { color: var(--muted); text-decoration: line-through; }
+  .item .own { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12ch; }
+  .agent { display: grid; gap: 1px; padding: 3px 8px; border: 1px solid var(--line); border-left: 4px solid var(--idle); border-radius: 8px; cursor: pointer; }
+  .agent.running { border-left-color: var(--run); } .agent.completed { border-left-color: var(--ok); } .agent.blocked { border-left-color: var(--bad); } .agent.timed_out { border-left-color: var(--warn); }
+  .agent:hover { background: var(--panel2); } .agent.sel { border-color: var(--run); }
+  .agent .top { display: flex; gap: 8px; align-items: center; font-weight: 600; } .agent .top .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .agent .top .muted { font-weight: 400; font-size: 11.5px; }
+  .agent .line { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .agent .line.bad { color: var(--bad); } .agent .line.warn { color: var(--warn); font-weight: 600; }
+  .more { border: 1px dashed var(--line); background: transparent; border-radius: 6px; padding: 2px 8px; color: var(--muted); cursor: pointer; justify-self: start; margin-top: 2px; }
+  .more:hover { color: var(--run); border-color: var(--run); }
+  .empty { color: var(--muted); font-style: italic; padding: 4px 0; }
+
+  /* health */
+  .health { display: grid; gap: 3px; }
+  .hrow { display: grid; grid-template-columns: 14px 1fr auto; gap: 6px; align-items: center; font-size: 12px; }
+  .hrow i { width: 9px; height: 9px; border-radius: 50%; background: var(--idle); display: inline-block; }
+  .hrow.ok i { background: var(--ok); } .hrow.warn i { background: var(--warn); } .hrow.bad i { background: var(--bad); }
+  .hrow span:last-child { color: var(--muted); font-size: 11.5px; text-align: right; }
+  .copy { margin-top: 6px; width: 100%; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; padding: 4px 8px; cursor: pointer; }
+  .copy:hover { border-color: var(--run); }
+
+  /* feed */
+  .filters { display: flex; gap: 5px; flex-wrap: wrap; padding: 0 12px 6px; }
+  .filters button { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 0 9px; cursor: pointer; font-size: 11.5px; color: var(--muted); }
   .filters button.on { background: var(--run-bg); border-color: var(--run); color: var(--run); }
-  .empty { color: var(--muted); font-style: italic; }
-  code { background: var(--idle-bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
-  @media (max-width: 560px) { .row { grid-template-columns: 54px 1fr; } .row .src { display: none; } }
+  .row { display: grid; grid-template-columns: 58px 54px minmax(0, 1fr); gap: 8px; padding: 1px 0; font-size: 12.5px; }
+  .row .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .row .txt.bad { color: var(--bad); }
+  .src { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; padding-top: 1px; }
+  .src.s-codex { color: #a371f7; } .src.s-wrap { color: var(--warn); } .src.s-hook { color: var(--ok); } .src.s-files { color: #39c5cf; } .src.s-agent { color: var(--run); }
+
+  /* modal */
+  #modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+  #modal.show { display: flex; }
+  #modal .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; width: min(900px, 100%); max-height: 86vh; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+  #modal .card header { background: transparent; border-bottom: 1px solid var(--line); } #modal .card .mb { padding: 10px 14px 14px; overflow: auto; }
+
+  @media (prefers-reduced-motion: reduce) { .edge.live, .node.running rect.box, .node.in_progress rect.box { animation: none; } .bar > i { transition: none; } }
+  /* small screens: stack the panels and allow the page to scroll */
+  @media (max-width: 960px) {
+    body { height: auto; overflow: auto; display: block; } main { flex: none; }
+    main { grid-template-columns: 1fr; grid-template-rows: none; grid-template-areas: "map" "side" "feed"; }
+    #mapPanel { height: 70vh; } #side { grid-template-rows: none; } #feedPanel { height: 320px; }
+    #side .panel { max-height: none; } .row { grid-template-columns: 54px 1fr; } .row .src { display: none; }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>AI Board</h1>
-  <span class="muted" id="root"></span>
-  <span class="muted" style="margin-left:auto"><span class="dot" id="dot"></span><span id="sync">connecting...</span></span>
+  <span class="muted proj" id="proj"></span>
+  <div class="overall" title="Tasks done"><div class="bar"><i id="oBar" style="width:0"></i></div><span id="oTxt" class="muted">no plan</span></div>
+  <div class="pills" id="pills"></div>
+  <span class="muted"><span class="dot" id="dot"></span><span id="sync">connecting...</span></span>
+  <button class="iconbtn" id="theme" type="button" aria-label="Switch dark or light mode" title="Switch dark or light mode"></button>
 </header>
+<div id="alert" role="status"><span class="grow" id="alertTxt"></span><button type="button" id="alertBtn" hidden></button></div>
 <main>
-  <div class="banner" id="banner"></div>
-  <section id="planSec"><h2>Plan and progress</h2><div id="plan"></div></section>
-  <section id="codexPlanSec" hidden><h2>Codex's own plan (live from the session)</h2><div id="codexPlan"></div></section>
-  <section><h2>Agents</h2><div class="grid" id="agents"></div></section>
-  <section id="cmdSec" hidden><h2>Commands running now</h2><div id="cmds"></div></section>
-  <section>
-    <h2>Activity</h2>
-    <div class="filters" id="filters"></div>
-    <div class="feed" id="feed"></div>
-    <p class="muted" id="srcNote" style="font-size:12px;margin:10px 0 0"></p>
+  <section class="panel" id="mapPanel" aria-label="Node map of the plan">
+    <h2><span>Node map: plan, agents, commands</span><span class="muted" id="mapHint" style="text-transform:none;letter-spacing:0;font-weight:500">drag to move, scroll to zoom, click a node</span></h2>
+    <div id="mapWrap">
+      <svg id="svg" role="group" aria-label="Plan nodes"><g id="edges"></g><g id="nodes"></g></svg>
+      <div class="hint" id="mapEmpty" hidden><div></div></div>
+      <div class="tools"><button class="iconbtn" id="zin" type="button" aria-label="Zoom in">+</button><button class="iconbtn" id="zout" type="button" aria-label="Zoom out">&minus;</button><button class="iconbtn" id="zfit" type="button">Fit</button></div>
+      <div class="legend" aria-hidden="true"><span>&#9679; running</span><span>&#10003; done</span><span>! blocked</span><span>&#9719; timed out</span><span>&#9675; pending</span></div>
+      <div id="detail" role="dialog" aria-label="Node details"></div>
+    </div>
   </section>
+  <section class="panel" id="feedPanel" aria-label="Activity">
+    <h2><span>Live activity</span><span class="muted" id="feedCount" style="text-transform:none;letter-spacing:0;font-weight:500"></span></h2>
+    <div class="filters" id="filters"></div>
+    <div class="body" id="feed"></div>
+  </section>
+  <div id="side">
+    <section class="panel" aria-label="Plan"><h2><span>Plan</span><span class="muted" id="planMeta" style="text-transform:none;letter-spacing:0;font-weight:500"></span></h2><div class="body list" id="plan"></div></section>
+    <section class="panel" aria-label="Agents"><h2><span>Agents</span><span class="muted" id="agentMeta" style="text-transform:none;letter-spacing:0;font-weight:500"></span></h2><div class="body list" id="agents"></div></section>
+    <section class="panel" aria-label="Logging health"><h2><span>Is it logging?</span><span id="healthVerdict" class="pill">-</span></h2><div class="body" style="flex:none"><div class="health" id="health"></div><button class="copy" id="copyBtn" type="button">Copy a reminder to paste to the agent</button></div></section>
+  </div>
 </main>
+<div id="modal" role="dialog" aria-modal="true"><div class="card"><header><strong id="mTitle"></strong><span style="margin-left:auto"></span><button class="iconbtn" id="mClose" type="button">Close (Esc)</button></header><div class="mb" id="mBody"></div></div></div>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-  let state = null, failedAt = 0, filter = 'all', feedKey = '';
+  const sv = (tag, attrs = {}, text) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text !== undefined) e.textContent = text; return e; };
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch { /* ignore */ } } };
+  const clip = (s, n) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
   const fmt = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); const m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : m ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`; };
+  const ago = (iso, now) => (iso ? `${fmt(now - Date.parse(iso))} ago` : 'never');
   const clock = (iso) => new Date(iso).toLocaleTimeString([], { hour12: false });
+  const ICON = { running: '●', in_progress: '●', done: '✓', completed: '✓', ok: '✓', blocked: '!', failed: '!', stalled: '!', timed_out: '◷', review: '◔', pending: '○' };
+  const WORD = (s) => String(s || '').replace('_', ' ');
 
-  function renderPlan(box, plan) {
+  // ---------- theme ----------
+  let theme = store.get('aiboard.theme') === 'light' ? 'light' : 'dark';
+  const applyTheme = () => { document.documentElement.dataset.theme = theme; $('theme').textContent = theme === 'dark' ? '☀ Light' : '☾ Dark'; };
+  $('theme').onclick = () => { theme = theme === 'dark' ? 'light' : 'dark'; store.set('aiboard.theme', theme); applyTheme(); };
+  applyTheme();
+
+  // ---------- state ----------
+  let state = null, sel = null, filter = 'all', lastKey = '';
+  let model = { nodes: [], edges: [], bounds: { x: 0, y: 0, w: 800, h: 400 } };
+  let view = null, userView = false;
+
+  // ---------- modal ----------
+  const openModal = (title, nodes) => { $('mTitle').textContent = title; const b = $('mBody'); b.replaceChildren(...nodes); $('modal').classList.add('show'); $('mClose').focus(); };
+  const closeModal = () => $('modal').classList.remove('show');
+  $('mClose').onclick = closeModal;
+  $('modal').onclick = (e) => { if (e.target === $('modal')) closeModal(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); select(null); } });
+
+  // ---------- fit a list into its box without scrolling ----------
+  function fitList(box, items, render, onMore) {
     box.replaceChildren();
-    if (!plan) { box.append(el('p', 'empty', 'No plan registered yet. The agent registers one with: node docs/ai/board/log.mjs plan "<title>" --task "<step> :: <role>"')); return; }
-    const s = plan.stats || (() => { const t = plan.tasks || plan.steps || []; const d = t.filter((x) => x.status === 'done').length; return { total: t.length, done: d, percent: t.length ? Math.round(d / t.length * 100) : 0 }; })();
-    const head = el('div'); head.style.cssText = 'display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap';
-    head.append(el('strong', '', plan.title || 'Plan'), el('span', 'muted', `${s.done}/${s.total} done (${s.percent}%)${plan.finishedAt ? ' - finished' : ''}${plan.source && plan.source !== 'agent' ? ` - from ${plan.source}` : ''}`));
-    const bar = el('div', 'progress'); const fill = el('i'); fill.style.width = `${s.percent}%`; bar.append(fill);
-    const ul = el('ul', 'tasks');
-    for (const t of (plan.tasks || plan.steps || [])) {
-      const li = el('li', t.status);
-      li.append(el('span', 'id', t.id || ''), el('span', `chip ${t.status}`, t.status.replace('_', ' ')));
-      const body = el('span'); body.append(el('span', 't', t.title));
-      if (t.owner) body.append(el('span', 'note', `  (${t.owner})`));
-      if (t.note) body.append(el('div', 'note', t.note));
-      li.append(body); ul.append(li);
-    }
-    box.append(head, bar, ul);
-    if (plan.next) box.append(el('p', 'muted', `Next: ${plan.next}`));
-    if ((plan.findings || []).length) { const f = el('p', 'muted', 'Findings: ' + plan.findings.map((x) => `${x.id} ${x.severity} (${x.state})`).join(', ')); box.append(f); }
+    for (const it of items) box.append(render(it));
+    const over = () => box.scrollHeight > box.clientHeight + 1;
+    if (!items.length || !over()) return;
+    const btn = el('button', 'more', '+more'); btn.type = 'button';
+    box.append(btn);
+    let hidden = 0;
+    while (over() && box.children.length > 2) { box.removeChild(box.children[box.children.length - 2]); hidden++; }
+    btn.textContent = `+${hidden} more`;
+    btn.onclick = onMore;
   }
 
-  function render() {
-    if (!state) return;
-    const now = Date.now(), skew = now - Date.parse(state.now);
-    $('root').textContent = state.root;
-    renderPlan($('plan'), state.plan);
-    $('codexPlanSec').hidden = !state.codexPlan;
-    if (state.codexPlan) renderPlan($('codexPlan'), { title: 'Codex plan', steps: state.codexPlan.steps.map((x, i) => ({ id: `S${i + 1}`, ...x })), source: 'codex' });
+  // ---------- node map model ----------
+  const NW = 178, NH = 58, GX = 46, GY = 26, AW = NW - 22, AH = 28, STACK_GAP = 6, MAXSTACK = 3;
 
-    const ag = $('agents'); ag.replaceChildren();
-    if (!state.agents.length) ag.append(el('p', 'empty', 'No agent has reported. Agents report with: node docs/ai/board/log.mjs agent <name> running "<task>"'));
-    for (const a of state.agents) {
-      const c = el('div', `agent ${a.status}`);
-      const n = el('div', 'name'); n.append(el('span', '', a.name), el('span', `chip ${a.status}`, a.status.replace('_', ' ')));
-      c.append(n, el('div', 'doing', a.doing || ''));
-      const elapsed = a.status === 'running' ? now - Date.parse(a.startedAt) : a.elapsedMs;
-      const meta = el('div', 'meta', `${a.status === 'running' ? 'running for ' : 'took '}${fmt(elapsed)}`);
-      if (a.overBudget) meta.append(el('span', 'over', `  over the ${a.budgetMin || 10} min budget: mark it timed_out`));
-      c.append(meta);
-      if (a.needs) c.append(el('div', 'needs', `Needs: ${a.needs}`));
-      else if (a.evidence) c.append(el('div', 'meta', `Evidence: ${a.evidence}`));
-      ag.append(c);
+  function taskStatusOfPlan(plan, tasks) {
+    if (plan && plan.finishedAt) return 'done';
+    if (tasks.some((t) => t.status === 'blocked')) return 'blocked';
+    if (tasks.some((t) => t.status === 'in_progress')) return 'in_progress';
+    if (tasks.length && tasks.every((t) => t.status === 'done')) return 'done';
+    return 'pending';
+  }
+
+  function hostFor(tasks, agent) {
+    const doing = String(agent.doing || '');
+    const byId = tasks.find((t) => new RegExp(`\\b${t.id}\\b`, 'i').test(doing));
+    if (byId) return byId;
+    const nd = norm(doing);
+    const byTitle = nd && tasks.find((t) => norm(t.title) && (nd.includes(norm(t.title)) || norm(t.title).includes(nd)));
+    if (byTitle) return byTitle;
+    const na = norm(agent.name);
+    const byOwner = na && tasks.find((t) => norm(t.owner) && (na.includes(norm(t.owner)) || norm(t.owner).includes(na)));
+    if (byOwner) return byOwner;
+    return tasks.find((t) => t.status === 'in_progress') || null;
+  }
+
+  function buildModel(st) {
+    const plan = st.plan; const tasks = (plan && plan.tasks) || [];
+    const cells = [{ kind: 'root', id: 'root', title: plan ? plan.title || 'Plan' : 'No plan yet', status: plan ? taskStatusOfPlan(plan, tasks) : 'pending', plan }];
+    for (const t of tasks) cells.push({ kind: 'task', id: t.id, title: t.title, status: t.status, owner: t.owner, note: t.note, startedAt: t.startedAt, doneAt: t.doneAt });
+    const n = cells.length;
+    const cols = n <= 3 ? n : n <= 8 ? 4 : n <= 15 ? 5 : 6;
+    const byId = new Map(cells.map((c) => [c.id, c]));
+    for (const c of cells) c.stack = [];
+    const rootCell = cells[0];
+
+    const agentNodes = [];
+    for (const a of st.agents) {
+      const host = hostFor(tasks, a); const hc = host ? byId.get(host.id) : rootCell;
+      const node = { kind: 'agent', id: `agent:${a.name}`, title: a.name, status: a.status, agent: a, host: hc };
+      agentNodes.push(node); hc.stack.push(node);
+    }
+    const recentCmds = (st.commands || []).filter((c) => c.status === 'running' || Date.now() - Date.parse(c.startedAt) < 20 * 60000);
+    for (const c of recentCmds) {
+      const an = agentNodes.find((x) => norm(x.title) === norm(c.agent));
+      const hc = an ? an.host : (cells.find((x) => x.kind === 'task' && x.status === 'in_progress') || rootCell);
+      hc.stack.push({ kind: 'cmd', id: `cmd:${c.id}`, title: c.text, status: c.status, cmd: c, host: hc });
+    }
+    for (const f of (plan && plan.findings) || []) {
+      if (f.state === 'open' && ['critical', 'high'].includes(f.severity)) rootCell.stack.unshift({ kind: 'finding', id: `finding:${f.id}`, title: `${f.id} ${f.severity}: ${f.text}`, status: 'blocked', finding: f, host: rootCell });
+    }
+    const rank = { blocked: 0, timed_out: 0, failed: 0, stalled: 0, running: 1, in_progress: 1, review: 2, completed: 3, done: 3, ok: 3 };
+    for (const c of cells) {
+      c.stack.sort((a, b) => (rank[a.status] ?? 2) - (rank[b.status] ?? 2));
+      if (c.stack.length > MAXSTACK) { const extra = c.stack.splice(MAXSTACK - 1); c.stack.push({ kind: 'more', id: `more:${c.id}`, title: `+${extra.length} more`, status: 'pending', extra, host: c }); }
     }
 
-    $('cmdSec').hidden = !state.runningCommands.length;
-    const cm = $('cmds'); cm.replaceChildren();
-    for (const c of state.runningCommands) cm.append(el('div', '', `${c.text}  (${fmt(now - Date.parse(c.startedAt))}, ${c.agent})`));
+    // grid positions, snake order so the line between rows is short
+    const rows = Math.ceil(n / cols);
+    const rowH = [];
+    for (let r = 0; r < rows; r++) { const m = Math.max(0, ...cells.slice(r * cols, r * cols + cols).map((c) => c.stack.length)); rowH.push(NH + (m ? 8 + m * (AH + STACK_GAP) : 0) + GY); }
+    const rowY = []; let y = 0; for (const h of rowH) { rowY.push(y); y += h; }
+    cells.forEach((c, i) => {
+      const r = Math.floor(i / cols); const k = i % cols; const col = r % 2 === 0 ? k : cols - 1 - k;
+      c.x = col * (NW + GX); c.y = rowY[r]; c.w = NW; c.h = NH; c.row = r; c.col = col;
+      c.stack.forEach((s, j) => { s.x = c.x + 11; s.y = c.y + NH + 8 + j * (AH + STACK_GAP); s.w = AW; s.h = AH; });
+    });
 
-    const b = $('banner'); b.className = 'banner';
-    const q = state.quiet;
-    if (q.stalled) { b.classList.add('stalled'); b.textContent = `No activity for ${fmt((q.seconds + skew / 1000) * 1000)} while work is marked in progress. Possibly stalled: check the agent, run npm run e2e:doctor, and do not restart the same command blindly.`; }
-    else if (q.active) { b.classList.add('ok'); b.textContent = `Working. Last activity ${q.seconds === null ? '-' : fmt(q.seconds * 1000)} ago.`; }
-    else { b.classList.add('idle'); b.textContent = 'Idle: nothing is running right now.'; }
+    const edges = [];
+    for (let i = 0; i < n - 1; i++) {
+      const a = cells[i], b = cells[i + 1];
+      const live = b.status === 'in_progress' || a.status === 'in_progress' && b.status !== 'done';
+      let d;
+      if (a.row === b.row) {
+        const dir = a.col < b.col ? 1 : -1; const x1 = dir > 0 ? a.x + a.w : a.x; const x2 = dir > 0 ? b.x : b.x + b.w; const yy = a.y + NH / 2;
+        d = `M${x1},${yy} C${x1 + dir * GX * 0.6},${yy} ${x2 - dir * GX * 0.6},${yy} ${x2},${yy}`;
+      } else {
+        const x = a.x + NW / 2; const y1 = a.y + NH + (a.stack.length ? 8 + a.stack.length * (AH + STACK_GAP) : 0); const y2 = b.y;
+        d = `M${x},${y1 - (a.stack.length ? 0 : 0)} L${x},${y2}`;
+      }
+      edges.push({ d, cls: `edge${a.status === 'done' && b.status !== 'pending' ? '' : ''}${live ? ' live' : ''}` });
+    }
+    const stackNodes = [];
+    for (const c of cells) for (const s of c.stack) {
+      stackNodes.push(s);
+      edges.push({ d: `M${c.x + 6},${c.y + NH} L${c.x + 6},${s.y + s.h / 2} L${s.x},${s.y + s.h / 2}`, cls: `edge dash${s.status === 'running' ? ' live' : ''}` });
+    }
+    const all = [...cells, ...stackNodes];
+    const minX = Math.min(...all.map((c) => c.x)), minY = Math.min(...all.map((c) => c.y));
+    const maxX = Math.max(...all.map((c) => c.x + c.w)), maxY = Math.max(...all.map((c) => c.y + c.h));
+    return { nodes: all, edges, bounds: { x: minX, y: minY, w: maxX - minX, h: maxY - minY }, cells };
+  }
 
+  // ---------- svg view (pan and zoom) ----------
+  const svg = $('svg');
+  function fitView() {
+    const r = svg.getBoundingClientRect(); const b = model.bounds; const pad = 28;
+    if (!r.width || !r.height) return { x: b.x, y: b.y, w: b.w, h: b.h };
+    let w = b.w + pad * 2, h = b.h + pad * 2; const ar = r.width / r.height;
+    if (w / h < ar) w = h * ar; else h = w / ar;
+    // never zoom in past 1.15x on small plans; keep it readable
+    const maxScale = 1.15; if (w < r.width / maxScale) { w = r.width / maxScale; h = r.height / maxScale; }
+    return { x: b.x + b.w / 2 - w / 2, y: b.y + b.h / 2 - h / 2, w, h };
+  }
+  function applyView() { const v = view || fitView(); svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`); }
+  function zoomBy(f, cx, cy) {
+    const v = view || fitView(); const r = svg.getBoundingClientRect();
+    const px = cx === undefined ? 0.5 : (cx - r.left) / r.width, py = cy === undefined ? 0.5 : (cy - r.top) / r.height;
+    const fit = fitView(); const w = Math.min(fit.w * 3, Math.max(fit.w * 0.12, v.w * f)); const k = w / v.w;
+    const h = v.h * k; view = { x: v.x + (v.w - w) * px, y: v.y + (v.h - h) * py, w, h }; userView = true; applyView();
+  }
+  $('zin').onclick = () => zoomBy(0.8); $('zout').onclick = () => zoomBy(1.25);
+  $('zfit').onclick = () => { view = null; userView = false; applyView(); };
+  svg.addEventListener('wheel', (e) => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 0.85 : 1.18, e.clientX, e.clientY); }, { passive: false });
+  let drag = null;
+  svg.addEventListener('pointerdown', (e) => { if (e.target.closest('.node')) return; drag = { x: e.clientX, y: e.clientY, v: { ...(view || fitView()) }, moved: false }; svg.setPointerCapture(e.pointerId); svg.classList.add('drag'); });
+  svg.addEventListener('pointermove', (e) => {
+    if (!drag) return; const r = svg.getBoundingClientRect(); const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    view = { x: drag.v.x - dx * drag.v.w / r.width, y: drag.v.y - dy * drag.v.h / r.height, w: drag.v.w, h: drag.v.h }; userView = true; applyView();
+  });
+  const endDrag = () => { if (drag && !drag.moved) select(null); drag = null; svg.classList.remove('drag'); };
+  svg.addEventListener('pointerup', endDrag); svg.addEventListener('pointercancel', endDrag);
+  new ResizeObserver(() => { applyView(); fitAll(); }).observe($('mapWrap'));
+
+  function centerOn(n) {
+    if (!view) return; const cx = n.x + n.w / 2, cy = n.y + n.h / 2;
+    view = { ...view, x: cx - view.w / 2, y: cy - view.h / 2 }; applyView();
+  }
+
+  function renderMap() {
+    const edges = $('edges'), nodes = $('nodes'); edges.replaceChildren(); nodes.replaceChildren();
+    for (const e of model.edges) edges.append(sv('path', { d: e.d, class: e.cls }));
+    const selRel = new Set();
+    const selNode = sel && model.nodes.find((n) => n.id === sel);
+    if (selNode) { selRel.add(selNode.id); if (selNode.host) selRel.add(selNode.host.id); for (const s of selNode.stack || []) selRel.add(s.id); }
+    for (const n of model.nodes) {
+      const cls = ['node', n.kind, n.status]; if (n.id === sel) cls.push('sel'); if (selNode && !selRel.has(n.id)) cls.push('dim'); if (n.kind === 'root' && !n.plan) cls.push('ghost');
+      const g = sv('g', { class: cls.join(' '), transform: `translate(${n.x},${n.y})`, tabindex: 0, role: 'button', 'aria-label': `${n.kind} ${n.title}, ${WORD(n.status)}` });
+      g.append(sv('title', {}, `${n.title} (${WORD(n.status)})`));
+      g.append(sv('rect', { class: 'box', width: n.w, height: n.h, rx: n.kind === 'task' || n.kind === 'root' ? 10 : 7 }));
+      g.append(sv('rect', { class: 'stripe', x: 0, y: 0, width: 5, height: n.h, rx: 2 }));
+      if (n.kind === 'task' || n.kind === 'root') {
+        g.append(sv('text', { class: 'ico', x: 16, y: 21 }, ICON[n.status] || '○'));
+        g.append(sv('text', { class: 'ttl', x: 34, y: 21 }, clip(n.kind === 'root' ? n.title : `${n.id} ${n.title}`, 21)));
+        const sub = n.kind === 'root' ? (n.plan ? `${(n.plan.stats || {}).done || 0}/${(n.plan.stats || {}).total || 0} done` + (n.plan.source && n.plan.source !== 'agent' ? ` (from ${n.plan.source})` : '') : 'ask the agent to register a plan') : [n.owner, WORD(n.status)].filter(Boolean).join(' · ');
+        g.append(sv('text', { class: 'sub', x: 16, y: 40 }, clip(sub, 28)));
+        if (n.kind === 'task' && n.note) g.append(sv('text', { class: 'sub', x: 16, y: 53 }, clip(n.note, 30)));
+      } else {
+        const label = n.kind === 'agent' ? `${n.title}` : n.kind === 'cmd' ? n.title : n.title;
+        g.append(sv('text', { class: 'ico', x: 12, y: 19 }, n.kind === 'more' ? '…' : ICON[n.status] || '○'));
+        g.append(sv('text', { class: 'sub', x: 28, y: 18, style: 'font-size:11.5px;fill:var(--ink)' }, clip(label, 21)));
+      }
+      const pick = (ev) => { ev.stopPropagation(); select(n.id); };
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(ev); } else if (/^Arrow/.test(ev.key)) { ev.preventDefault(); neighbor(n, ev.key); } });
+      nodes.append(g);
+    }
+    $('mapEmpty').hidden = true;
+    if (!state.plan && !state.agents.length) {
+      const h = $('mapEmpty'); h.hidden = false; h.firstElementChild.replaceChildren(el('p', '', 'No plan yet.'), el('p', 'muted', 'The agent registers one with'), el('p', 'mono', 'node docs/ai/board/log.mjs plan "Title" --task "Step :: Role"'));
+      
+    }
+  }
+
+  function neighbor(n, key) {
+    const cells = model.cells; const i = cells.indexOf(n.kind === 'task' || n.kind === 'root' ? n : n.host);
+    let to = null;
+    if (key === 'ArrowRight' || key === 'ArrowDown') to = cells[i + 1]; else to = cells[i - 1];
+    if (to) { select(to.id); const g = [...$('nodes').children][model.nodes.indexOf(to)]; if (g) g.focus(); }
+  }
+
+  // ---------- selection and detail ----------
+  function select(id) {
+    sel = id; const n = id && model.nodes.find((x) => x.id === id); renderMap(); renderSide(); const d = $('detail');
+    if (!n) { d.classList.remove('show'); return; }
+    if (n.kind === 'more') { d.classList.remove('show'); openModal(`${n.host.title}: more`, n.extra.map((x) => detailRow(x))); return; }
+    d.replaceChildren(); d.classList.add('show');
+    const x = el('button', 'x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close details'); x.onclick = () => select(null);
+    d.append(x, el('h3', '', `${n.kind === 'root' ? 'Plan' : n.kind === 'task' ? `Task ${n.id}` : n.kind === 'agent' ? 'Agent' : n.kind === 'cmd' ? 'Command' : 'Finding'}: ${n.kind === 'agent' || n.kind === 'cmd' ? clip(n.title, 60) : n.title}`));
+    const dl = el('dl'); const row = (k, v) => { if (v === undefined || v === '' || v === null) return; dl.append(el('dt', '', k), el('dd', '', String(v))); };
+    const now = Date.now();
+    row('Status', WORD(n.status));
+    if (n.kind === 'task') { row('Owner', n.owner); row('Note', n.note); if (n.startedAt) row('Started', `${clock(n.startedAt)} (${ago(n.startedAt, now)})`); if (n.doneAt) row('Done', clock(n.doneAt)); }
+    if (n.kind === 'root' && n.plan) { const p = n.plan; row('Progress', `${(p.stats || {}).done}/${(p.stats || {}).total} (${(p.stats || {}).percent}%)`); row('Mode / size', [p.mode, p.size].filter(Boolean).join(' / ')); row('Stack', p.stack); row('Next', p.next); row('Source', p.source); row('Finished', p.finishedAt ? clock(p.finishedAt) : ''); }
+    if (n.kind === 'agent') { const a = n.agent; row('Doing', a.doing); row('Started', a.startedAt ? `${clock(a.startedAt)} (${ago(a.startedAt, now)})` : ''); row(a.status === 'running' ? 'Running for' : 'Took', fmt(a.status === 'running' ? now - Date.parse(a.startedAt) : a.elapsedMs)); row('Budget', `${a.budgetMin || 10} min${a.overBudget ? ' (over: mark it timed_out)' : ''}`); row('Needs', a.needs); row('Evidence', a.evidence); row('Attached to', n.host && n.host.kind === 'task' ? `${n.host.id} ${n.host.title}` : 'plan'); }
+    if (n.kind === 'cmd') { const c = n.cmd; row('Run by', c.agent); row('Started', c.startedAt ? `${clock(c.startedAt)} (${ago(c.startedAt, now)})` : ''); row('Exit code', c.code); row('Duration', c.durationMs != null ? fmt(c.durationMs) : c.status === 'running' ? `running ${fmt(now - Date.parse(c.startedAt))}` : ''); }
+    if (n.kind === 'finding') { row('Severity', n.finding.severity); row('Finding', n.finding.text); row('State', n.finding.state); }
+    d.append(dl);
+    if (n.kind === 'cmd') { if (n.cmd.text) d.append(el('pre', 'mono', n.cmd.text)); if (n.cmd.tail && n.cmd.tail.length) d.append(el('pre', 'mono', n.cmd.tail.join('\n'))); }
+    if (userView) centerOn(n);
+  }
+  const detailRow = (n) => { const r = el('div', 'item'); r.append(el('span', 'chip ' + n.status, WORD(n.status)), el('span', 't', clip(n.title, 90))); r.style.gridTemplateColumns = 'auto 1fr'; return r; };
+
+  // ---------- side panels ----------
+  function planItems() { return (state.plan && state.plan.tasks) || []; }
+  function renderSide() {
+    const plan = state.plan; const tasks = planItems();
+    $('planMeta').textContent = plan ? `${(plan.stats || {}).done}/${(plan.stats || {}).total} done` : '';
+    const rowTask = (t) => { const r = el('div', `item ${t.status}${sel === t.id ? ' sel' : ''}`); r.tabIndex = 0; r.append(el('span', 'id', t.id), el('span', `chip ${t.status}`, `${ICON[t.status] || ''} ${WORD(t.status)}`), el('span', 't', t.title), el('span', 'own', t.owner || '')); r.title = `${t.title}${t.note ? `: ${t.note}` : ''}`; const go = () => select(t.id); r.onclick = go; r.onkeydown = (e) => { if (e.key === 'Enter') go(); }; return r; };
+    const pb = $('plan');
+    if (!tasks.length) { pb.replaceChildren(el('p', 'empty', 'No plan registered yet.')); }
+    else fitList(pb, tasks, rowTask, () => openModal(plan.title || 'Plan', tasks.map(rowTask)));
+
+    const prio = { blocked: 0, timed_out: 0, running: 1, completed: 2 };
+    const ag = [...state.agents].sort((a, b) => (prio[a.status] ?? 3) - (prio[b.status] ?? 3)); const running = ag.filter((a) => a.status === 'running').length;
+    $('agentMeta').textContent = ag.length ? `${running} running, ${ag.length} total` : '';
+    const rowAgent = (a) => {
+      const c = el('div', `agent ${a.status}${sel === `agent:${a.name}` ? ' sel' : ''}`); c.tabIndex = 0;
+      const timer = el('span', 'muted'); timer.dataset.since = a.startedAt; timer.dataset.run = a.status === 'running' ? '1' : ''; timer.dataset.fixed = a.status === 'running' ? '' : fmt(a.elapsedMs);
+      const top = el('div', 'top'); const nm = el('span', 'nm', a.name); top.append(nm, timer, el('span', `chip ${a.status}`, `${ICON[a.status] || ''} ${WORD(a.status)}`));
+      c.append(top);
+      if (a.overBudget) c.append(el('div', 'line warn', `over the ${a.budgetMin || 10} min budget: mark it timed_out`));
+      else if (a.needs) c.append(el('div', 'line bad', `needs: ${a.needs}`));
+      else if (a.status === 'running' && a.doing) c.append(el('div', 'line', a.doing));
+      else if (a.status === 'timed_out' && a.evidence) c.append(el('div', 'line warn', a.evidence));
+      c.title = [a.doing, a.evidence && `evidence: ${a.evidence}`].filter(Boolean).join(' | ');
+      const go = () => select(`agent:${a.name}`); c.onclick = go; c.onkeydown = (e) => { if (e.key === 'Enter') go(); };
+      return c;
+    };
+    const ab = $('agents');
+    if (!ag.length) ab.replaceChildren(el('p', 'empty', 'No agent has reported yet.'));
+    else fitList(ab, ag, rowAgent, () => openModal('Agents', ag.map(rowAgent)));
+    tickTimers();
+  }
+
+  function tickTimers() {
+    const now = Date.now();
+    for (const t of document.querySelectorAll('[data-since]')) t.textContent = t.dataset.run ? `running ${fmt(now - Date.parse(t.dataset.since))}` : `took ${t.dataset.fixed}`;
+  }
+
+  // ---------- header, alert, health ----------
+  const REMINDER = 'Logging check: your work is not showing on the AI board. Do these now, in order: (1) node docs/ai/board/log.mjs plan "<title>" --task "<step> :: <role>" for your current plan; (2) set each task with log.mjs task <id> in_progress / done "<evidence>"; (3) report each agent with log.mjs agent <name> <running|completed|blocked|timed_out> "<task>"; (4) run Pest, Playwright and builds only as npm run ai:run -- <command>. If a log command is refused or fails, tell me the exact error and stop instead of continuing silently.';
+
+  function renderHead() {
+    const st = state, now = Date.now();
+    $('proj').textContent = st.root.split(/[\\/]/).filter(Boolean).pop() || st.root; $('proj').title = st.root;
+    const p = st.plan, s = p && p.stats;
+    $('oBar').style.width = `${s ? s.percent : 0}%`; $('oTxt').textContent = s ? `${s.done}/${s.total} tasks · ${s.percent}%` : 'no plan';
+    const pills = $('pills'); pills.replaceChildren();
+    const run = st.agents.filter((a) => a.status === 'running').length;
+    const bad = st.agents.filter((a) => a.status === 'blocked' || a.status === 'timed_out').length + (p ? p.tasks.filter((t) => t.status === 'blocked').length : 0);
+    pills.append(el('span', `pill ${run ? 'run' : ''}`, `${run} agent${run === 1 ? '' : 's'} running`));
+    if (bad) pills.append(el('span', 'pill bad', `${bad} blocked / timed out`));
+    if (st.commands && st.commands.some((c) => c.status === 'running')) pills.append(el('span', 'pill run', `${st.commands.filter((c) => c.status === 'running').length} command running`));
+    const h = st.health; const hp = el('span', `pill ${h.level}`, h.verdict); pills.append(hp);
+
+    const a = $('alert'); a.className = ''; $('alertBtn').hidden = true;
+    let msg = '', cls = '';
+    if (st.quiet.stalled) { cls = 'bad'; msg = `No activity for ${fmt((st.quiet.seconds) * 1000)} while work is in progress. Possibly stalled: check the agent, run the doctor (npm run e2e:doctor), do not restart the same command blindly.`; }
+    else if (h.unlogged) { cls = 'warn'; msg = `The agent is working (${h.workSource}) but has not logged for ${h.selfAgo}. The plan and agent cards are stale.`; $('alertBtn').hidden = false; $('alertBtn').textContent = 'Copy reminder'; }
+    else if (bad) { cls = 'bad'; msg = 'Something is blocked or timed out. The agent must stop and ask you before continuing.'; }
+    if (msg) { a.className = `show ${cls}`; $('alertTxt').textContent = msg; }
+  }
+
+  async function copyReminder(btn) {
+    let ok = false;
+    try { await navigator.clipboard.writeText(REMINDER); ok = true; } catch { /* fall back below */ }
+    if (!ok) { const ta = el('textarea'); ta.value = REMINDER; ta.style.cssText = 'width:100%;height:150px'; openModal('Copy this and paste it to the agent', [ta]); ta.select(); return; }
+    const old = btn.textContent; btn.textContent = 'Copied. Paste it to the agent.'; setTimeout(() => { btn.textContent = old; }, 2000);
+  }
+  $('copyBtn').onclick = (e) => copyReminder(e.currentTarget);
+  $('alertBtn').onclick = (e) => copyReminder(e.currentTarget);
+
+  function renderHealth() {
+    const h = state.health, now = Date.now(); const box = $('health'); box.replaceChildren();
+    const v = $('healthVerdict'); v.className = `pill ${h.level}`; v.textContent = h.verdict;
+    for (const r of h.rows) { const row = el('div', `hrow ${r.level}`); row.append(el('i'), el('span', '', r.label), el('span', '', r.detail)); row.title = r.hint || ''; box.append(row); }
+  }
+
+  // ---------- feed ----------
+  function renderFeed() {
     const sources = ['all', ...new Set(state.events.map((e) => e.source))];
     const fl = $('filters'); fl.replaceChildren();
-    for (const s of sources) { const bt = el('button', s === filter ? 'on' : '', s); bt.onclick = () => { filter = s; render(); }; fl.append(bt); }
-    const feed = $('feed');
+    for (const s of sources) { const b = el('button', s === filter ? 'on' : '', s); b.type = 'button'; b.onclick = () => { filter = s; renderFeed(); }; fl.append(b); }
     const list = state.events.filter((e) => filter === 'all' || e.source === filter);
-    const key = `${filter}|${list.length}|${list[0] ? list[0].ts + list[0].text : ''}`;
-    if (key !== feedKey) { feedKey = key; feed.replaceChildren(); } else list.length = 0; // unchanged: keep scroll position
-    if (!state.events.length) feed.append(el('p', 'empty', 'No activity yet.'));
-    for (const e of list) {
-      const r = el('div', 'row');
-      const bad = /FAILED|STALLED|TIMED OUT|blocked|error|timed_out/i.test(`${e.kind} ${e.text}`);
-      r.append(el('span', 'muted', clock(e.ts)), el('span', `src s-${e.source}`, e.source), el('span', `txt${bad ? ' bad' : ''}`, `${e.agent && e.source !== 'codex' ? `[${e.agent}] ` : ''}${e.text}`));
-      feed.append(r);
-    }
-    const cx = state.codex;
-    $('srcNote').textContent = `Sources: agent reports (log.mjs), wrapped commands (ai:run), Claude hooks, and Codex session files (${cx.found ? `${cx.sessions} session(s) for this project` : 'not found on this machine; run npm run ai:probe'}).`;
+    $('feedCount').textContent = `${list.length} events`;
+    const rowEv = (e) => {
+      const r = el('div', 'row'); const bad = /FAILED|STALLED|TIMED OUT|blocked|error|timed_out|STOP/i.test(`${e.kind} ${e.text}`);
+      r.append(el('span', 'muted mono', clock(e.ts)), el('span', `src s-${e.source}`, e.source), el('span', `txt${bad ? ' bad' : ''}`, `${e.agent && e.source !== 'codex' && e.source !== 'files' ? `[${e.agent}] ` : ''}${e.text}`));
+      r.title = e.text; return r;
+    };
+    const fb = $('feed');
+    if (!list.length) fb.replaceChildren(el('p', 'empty', 'No activity yet. Anything the agent logs, runs through ai:run, or edits on disk will show here.'));
+    else fitList(fb, list, rowEv, () => openModal('Activity', list.map(rowEv)));
   }
 
+  function fitAll() { if (state) { renderSide(); renderFeed(); } }
+
+  function render() {
+    renderHead(); renderHealth(); renderFeed(); renderSide();
+    model = buildModel(state); renderMap(); if (!userView) view = null; applyView();
+    if (sel && !model.nodes.find((n) => n.id === sel)) select(null);
+  }
+
+  // ---------- poll ----------
   async function tick() {
     try {
-      const r = await fetch('/api/state', { cache: 'no-store' });
-      if (!r.ok) throw new Error(r.status);
-      state = await r.json(); failedAt = 0;
+      const r = await fetch('/api/state', { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
+      const next = await r.json();
+      const key = JSON.stringify([next.plan, next.agents.map((a) => [a.name, a.status, a.doing, a.updatedAt, a.overBudget]), next.commands, next.events.slice(0, 40), next.health, next.quiet, next.root]);
       $('dot').className = 'dot'; $('sync').textContent = `live ${new Date().toLocaleTimeString([], { hour12: false })}`;
-    } catch { failedAt ||= Date.now(); $('dot').className = 'dot off'; $('sync').textContent = 'board stopped? (run npm run ai:board)'; }
-    render();
+      if (key !== lastKey) { lastKey = key; state = next; render(); } else { state = next; }
+    } catch {
+      $('dot').className = 'dot off'; $('sync').textContent = 'board stopped? run npm run ai:board';
+    }
   }
-  tick(); setInterval(tick, 2000);
-  setInterval(render, 1000); // keeps the timers moving between polls
+  tick(); setInterval(tick, 2000); setInterval(tickTimers, 1000);
 })();
 </script>
 </body>
