@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { assertSafeE2EDatabase, laravelProcessEnv, loadE2EEnv } from './tests/e2e/support/env';
 import { pickFreePort } from './tests/e2e/support/ports';
+import { ffmpegAvailable, pickChannel } from './tests/e2e/support/browser.mjs';
 
 // Reads .env.e2e and REFUSES to run unless DB_DATABASE ends with "_e2e" (never touches dev/prod data).
 const e2eEnv = loadE2EEnv();
@@ -13,6 +14,17 @@ const PREFERRED_PORT = Number(new URL(e2eEnv.APP_URL ?? 'http://127.0.0.1:8001')
 const APP_PORT = REUSE_SERVER ? PREFERRED_PORT : pickFreePort(PREFERRED_PORT);
 const APP_URL = `http://127.0.0.1:${APP_PORT}`;
 const processEnv = { ...laravelProcessEnv(e2eEnv), APP_URL };
+
+// Browser: Playwright's Chromium if it is downloaded, otherwise the installed Chrome/Edge (set E2E_BROWSER_CHANNEL to force one).
+process.env.E2E_BROWSER_CHANNEL ||= e2eEnv.E2E_BROWSER_CHANNEL || pickChannel() || '';
+const CHANNEL = process.env.E2E_BROWSER_CHANNEL || undefined;
+if (CHANNEL && !process.env.E2E_CHANNEL_LOGGED) {
+  process.env.E2E_CHANNEL_LOGGED = '1';
+  console.warn(`[e2e] using the installed browser channel "${CHANNEL}" (Playwright's Chromium is not downloaded or a channel was requested).`);
+}
+
+// Video needs Playwright's ffmpeg. Without it (downloads blocked) video stays off instead of failing every test.
+const VIDEO = ffmpegAvailable();
 
 const REALTIME = e2eEnv.BROADCAST_CONNECTION === 'reverb';
 // E2E_WATCH=1 -> slow-motion, plus trace/video/screenshot for every test (use with --headed or --ui).
@@ -31,7 +43,7 @@ export default defineConfig({
     baseURL: APP_URL,
     trace: WATCH ? 'on' : 'on-first-retry',
     screenshot: WATCH ? 'on' : 'only-on-failure',
-    video: WATCH ? 'on' : 'retain-on-failure',
+    video: VIDEO ? (WATCH ? 'on' : 'retain-on-failure') : 'off',
     launchOptions: { slowMo: WATCH ? Number(process.env.E2E_SLOWMO ?? 300) : 0 },
     locale: 'en-US',
     timezoneId: 'UTC',
@@ -40,13 +52,13 @@ export default defineConfig({
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], channel: CHANNEL },
       dependencies: ['setup'],
       testIgnore: /auth\.setup\.ts/,
     },
     {
       name: 'mobile',
-      use: { ...devices['Pixel 7'] },
+      use: { ...devices['Pixel 7'], channel: CHANNEL },
       dependencies: ['setup'],
       grep: /@mobile/,                    // only specs tagged @mobile
     },

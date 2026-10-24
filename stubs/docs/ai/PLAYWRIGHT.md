@@ -23,9 +23,35 @@ Do not duplicate: if a rule is fully covered by a fast Pest test, E2E only needs
 
 ## 2. Setup (once per project)
 
+### 2.0 Automatic setup (agents do this without being asked)
+
+If a task needs browser/E2E verification and `playwright.config.ts` or `.env.e2e` is missing, the agent runs the setup itself. It does not ask first and does not set things up by hand:
+
+```bash
+node docs/ai/templates/playwright/setup.mjs      # safe to re-run; add --force to overwrite, --no-db to skip MySQL, --skip-install to skip npm
+npm run e2e:doctor
+npm run e2e
+```
+
+What `setup.mjs` does (every command has a timeout; existing files are kept unless `--force`):
+
+| Step | Result |
+|---|---|
+| Install | `@playwright/test` and `@axe-core/playwright` as dev dependencies |
+| Browser | Tries the Playwright Chromium download. If it is blocked (network, proxy), it falls back to the **installed Google Chrome or Microsoft Edge** and saves `E2E_BROWSER_CHANNEL=chrome` (or `msedge`) in `.env.e2e` |
+| Database | Creates the isolated MySQL database `<app>_e2e` (never the dev or testing database) |
+| Files | `.env.e2e` (safety settings), `playwright.config.ts`, `tests/e2e/**`, `smoke.spec.ts`, `E2ESeeder.php` |
+| Scripts | `e2e`, `e2e:doctor`, `e2e:report` (and `e2e:watch`) in `package.json` |
+
+Runtime behavior that needs no action: a busy port moves to the next free one; video is turned off when `ffmpeg` is missing; the suite refuses to run unless the database ends with `_e2e`.
+
+Report the result as: installed, browser used (Chromium or `chrome`/`msedge` channel), database created, smoke test result. If setup fails, return `blocked` with the exact `FAIL` line and its `fix:` hint.
+
+### 2.1 Manual setup (only if the script cannot run)
+
 ```bash
 npm install --save-dev @playwright/test @axe-core/playwright
-npx playwright install chromium          # Linux CI: npx playwright install --with-deps chromium
+npx --no-install playwright install chromium   # blocked? set E2E_BROWSER_CHANNEL=chrome in .env.e2e. Linux CI: add --with-deps
 ```
 
 Copy from the templates:

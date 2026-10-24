@@ -131,6 +131,7 @@ A task is not finished when the code is written. It is finished when the checks 
 
 Tests and browsers fail for boring reasons (MySQL down, port taken, tool unavailable). Handle them the same way every time:
 
+0. **Playwright not set up yet:** run `node docs/ai/templates/playwright/setup.mjs` yourself without asking (PLAYWRIGHT.md Section 2.0). Do not hand-install it. Ask the user only if setup returns a `FAIL`.
 1. **Preflight before running anything heavy:** `php docs/ai/templates/laravel/test-doctor.php` before Pest, `npm run e2e:doctor` before Playwright. Any FAIL: stop, report `blocked` with the exact output, wait for the user. Do not run the suite hoping it works.
 2. **No hanging.** A command with no output for 120 seconds is stalled. Stop it, run the doctor, report `blocked`. Never wait indefinitely and never launch the same command again.
 3. **One retry at most**, and only after the cause changed (you fixed something). Repeating an identical failing command is wasted tokens.

@@ -5,7 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
+import { bundledChromiumPath, channelPath, ffmpegAvailable, installedChannel } from './browser.mjs';
 
 let failures = 0;
 const ok = (m) => console.log(`  OK    ${m}`);
@@ -54,11 +55,25 @@ existsSync(resolve('node_modules/@playwright/test'))
   ? ok('@playwright/test is installed')
   : fail('@playwright/test is not installed', 'run: npm install --save-dev @playwright/test   (then always use "npm run e2e" or "npx --no-install playwright")');
 
-// Browsers
-const cacheDirs = [process.env.PLAYWRIGHT_BROWSERS_PATH, join(os.homedir(), '.cache', 'ms-playwright'),
-  process.env.LOCALAPPDATA && join(process.env.LOCALAPPDATA, 'ms-playwright'), join(os.homedir(), 'Library', 'Caches', 'ms-playwright')].filter(Boolean);
-const hasChromium = cacheDirs.some((d) => existsSync(d) && readdirSync(d).some((n) => n.startsWith('chromium')));
-hasChromium ? ok('Chromium browser is installed') : fail('Chromium is not installed', 'run: npx --no-install playwright install chromium');
+// Browser: the downloaded Chromium must match the INSTALLED Playwright version, otherwise launch fails
+// (an old chromium-XXXX folder from another version does not count). A system Chrome/Edge is a valid fallback.
+const envFileForBrowser = resolve('.env.e2e');
+const wanted = process.env.E2E_BROWSER_CHANNEL || (existsSync(envFileForBrowser) ? parseEnv(envFileForBrowser).E2E_BROWSER_CHANNEL : '') || '';
+const bundled = existsSync(resolve('node_modules/@playwright/test')) ? bundledChromiumPath() : null;
+if (wanted) {
+  const p = channelPath(wanted);
+  p ? ok(`browser channel "${wanted}" found at ${p}`) : fail(`browser channel "${wanted}" is not installed`, 'install that browser, or remove E2E_BROWSER_CHANNEL to use the downloaded Chromium');
+} else if (bundled) {
+  ok('Playwright Chromium is downloaded for this Playwright version');
+} else {
+  const sys = installedChannel();
+  sys
+    ? ok(`Playwright Chromium is not downloaded; the installed ${sys.channel} will be used automatically (${sys.path})`)
+    : fail('no browser available (Playwright Chromium missing for this version, and no Chrome/Edge found)',
+        'run: npx --no-install playwright install chromium. If the download is blocked by your network, install Google Chrome or Edge instead; the config picks it up by itself.');
+}
+
+ffmpegAvailable() ? ok('ffmpeg is available (video recording on)') : warn('ffmpeg is not downloaded: video recording is turned off. Traces and screenshots still work. To enable: npx --no-install playwright install ffmpeg');
 
 // PHP
 try { execFileSync('php', ['-v'], { stdio: 'ignore', timeout: 5000 }); ok('php is on PATH'); }
@@ -92,6 +107,10 @@ if (!existsSync(envFile)) {
     const rp = Number(env.REVERB_SERVER_PORT || env.REVERB_PORT || 8080);
     (await portFree(rp)) ? ok(`Reverb port ${rp} is free`) : fail(`Reverb port ${rp} is busy`, `stop the process using it, or change REVERB_SERVER_PORT / REVERB_PORT in .env.e2e`);
   }
+}
+
+if (existsSync(resolve('package.json')) && (existsSync(resolve('vite.config.js')) || existsSync(resolve('vite.config.ts')))) {
+  existsSync(resolve('public/build/manifest.json')) ? ok('built frontend assets found (public/build)') : warn('public/build is missing: run "npm run build:e2e" so pages render with their CSS/JS');
 }
 
 console.log(failures ? `\n${failures} problem(s). Fix them before running the suite; do not retry the run until they are fixed.` : '\nAll checks passed.');

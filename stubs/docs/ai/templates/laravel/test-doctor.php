@@ -1,8 +1,19 @@
 <?php
 /**
- * Preflight for Pest/PHPUnit on MySQL. Run from the project root: php docs/ai/templates/laravel/test-doctor.php
- * (copy it anywhere you like). Finds why tests stall at bootstrap. Every step has a short timeout, so it never hangs.
+ * Preflight for MySQL test databases. Run from the project root.
+ *   Pest:        php docs/ai/templates/laravel/test-doctor.php
+ *   E2E:         php docs/ai/templates/laravel/test-doctor.php --env=.env.e2e --suffix=_e2e [--create]
+ * Finds why tests stall at bootstrap. Every step has a short timeout, so it never hangs.
+ * --create  creates the database when it is missing, but ONLY if its name ends with the required suffix.
  */
+$opts = [];
+foreach (array_slice($argv, 1) as $arg) {
+    if (preg_match('/^--([a-z-]+)(?:=(.*))?$/', $arg, $m)) {
+        $opts[$m[1]] = $m[2] ?? true;
+    }
+}
+$suffix = $opts['suffix'] ?? '_testing';
+$onlyEnv = $opts['env'] ?? null;
 $fails = 0;
 $ok = fn (string $m) => print("  OK    $m\n");
 $fail = function (string $m, string $fix) use (&$fails) { $fails++; print("  FAIL  $m\n        fix: $fix\n"); };
@@ -11,7 +22,7 @@ echo "Test database preflight\n\n";
 
 // Read .env.testing first, then phpunit.xml <env> values, then .env.
 $vals = [];
-foreach (['.env', '.env.testing'] as $file) {
+foreach ($onlyEnv ? [$onlyEnv] : ['.env', '.env.testing'] as $file) {
     if (is_file($file)) {
         foreach (file($file, FILE_IGNORE_NEW_LINES) as $line) {
             if (preg_match('/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/', $line, $m) && $line[0] !== '#') {
@@ -20,7 +31,7 @@ foreach (['.env', '.env.testing'] as $file) {
         }
     }
 }
-foreach (['phpunit.xml', 'phpunit.xml.dist'] as $file) {
+foreach ($onlyEnv ? [] : ['phpunit.xml', 'phpunit.xml.dist'] as $file) {
     if (is_file($file) && ($xml = @simplexml_load_file($file))) {
         foreach ($xml->xpath('//php/env|//php/server') ?: [] as $node) {
             $vals[(string) $node['name']] = (string) $node['value'];
@@ -36,8 +47,8 @@ $db = $vals['DB_DATABASE'] ?? '';
 $user = $vals['DB_USERNAME'] ?? 'root';
 $pass = $vals['DB_PASSWORD'] ?? '';
 
-$conn === 'mysql' ? $ok('DB_CONNECTION=mysql') : $fail("DB_CONNECTION is \"$conn\"", 'set DB_CONNECTION=mysql in phpunit.xml (SQLite is not allowed)');
-preg_match('/_testing$/', $db) ? $ok("DB_DATABASE=$db") : $fail("DB_DATABASE \"$db\" does not end with _testing", 'use a database like app_testing in phpunit.xml');
+$conn === 'mysql' ? $ok('DB_CONNECTION=mysql') : $fail("DB_CONNECTION is \"$conn\"", 'set DB_CONNECTION=mysql (SQLite is not allowed)');
+preg_match('/'.preg_quote($suffix, '/').'$/', $db) ? $ok("DB_DATABASE=$db") : $fail("DB_DATABASE \"$db\" does not end with $suffix", "use a database like app$suffix");
 $host === 'localhost' && print("  WARN  DB_HOST=localhost can be slow or hang on Windows. Use 127.0.0.1.\n");
 extension_loaded('pdo_mysql') ? $ok('pdo_mysql extension loaded') : $fail('pdo_mysql is not loaded', 'enable extension=pdo_mysql in php.ini');
 
@@ -52,7 +63,14 @@ if (! $sock) {
         $pdo = new PDO("mysql:host=$host;port=$port", $user, $pass, [PDO::ATTR_TIMEOUT => 3, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $ok("login works for user \"$user\"");
         $exists = $pdo->query('SHOW DATABASES LIKE '.$pdo->quote($db))->fetchColumn();
-        $exists ? $ok("database $db exists") : $fail("database $db does not exist", "create it: CREATE DATABASE `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+        if ($exists) {
+            $ok("database $db exists");
+        } elseif (isset($opts['create']) && preg_match('/'.preg_quote($suffix, '/').'$/', $db) && preg_match('/^[A-Za-z0-9_]+$/', $db)) {
+            $pdo->exec("CREATE DATABASE `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $ok("database $db created");
+        } else {
+            $fail("database $db does not exist", "create it: CREATE DATABASE `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;  (or re-run with --create)");
+        }
     } catch (Throwable $e) {
         $fail('MySQL login failed: '.$e->getMessage(), 'check DB_USERNAME / DB_PASSWORD in phpunit.xml');
     }

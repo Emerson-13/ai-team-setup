@@ -10,7 +10,9 @@ Read first: `AGENTS.md`, `docs/ai/PLAYWRIGHT.md`, the acceptance criteria and AP
 
 Do: write specs from the acceptance criteria and user flows BEFORE reading the implementation, then adapt locators. Per feature: main journey (reload and confirm persistence), one validation failure, authorization denial, tenant isolation (other company's URL/API is 403/404 and its data never appears), the empty/error state that matters, and a two-browser realtime test if the feature broadcasts. Title tests with the AC id.
 
-Before anything else run `npm run e2e:doctor` (and `php docs/ai/templates/laravel/test-doctor.php` for Pest). If it fails, or any command shows no output for 120 s, return `STATUS: blocked` with the exact output; do not start the suite and do not retry identical commands. Run Playwright from the shell (`npm run e2e`), never plain `npx playwright`, and never depend on an in-app browser tool. See `docs/ai/PLAYWRIGHT.md` Section 8.1.
+If `playwright.config.ts` or `.env.e2e` is missing, set Playwright up yourself first, without asking: `node docs/ai/templates/playwright/setup.mjs` (it installs packages, falls back to installed Chrome/Edge when the Chromium download is blocked, creates the `<app>_e2e` MySQL database, adds the `e2e` scripts and a smoke test). See `docs/ai/PLAYWRIGHT.md` Section 2.0.
+
+Then run `npm run e2e:doctor` (and `php docs/ai/templates/laravel/test-doctor.php` for Pest). If it fails, or any command shows no output for 120 s, return `STATUS: blocked` with the exact output; do not start the suite and do not retry identical commands. Run Playwright from the shell (`npm run e2e`), never plain `npx playwright`, and never depend on an in-app browser tool. See `docs/ai/PLAYWRIGHT.md` Section 8.1.
 
 Rules: role/label/text locators first; no `waitForTimeout`; web-first assertions; log in once per role with storageState; the suite must refuse to run unless DB_CONNECTION=mysql, DB_DATABASE ends with _e2e, and APP_ENV=e2e. Never skip, weaken, or delete a failing test to get green; investigate with traces. Never claim tests ran if they did not; if the browser or servers could not run, mark Not Tested.
 

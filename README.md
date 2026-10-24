@@ -118,7 +118,7 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 |---|---|
 | `docs/ai/n8n/` | Import-ready n8n workflows (below) |
 | `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`), `test-doctor.php` (Pest/MySQL preflight) |
-| `docs/ai/templates/playwright/` | Playwright config (auto free port), `e2e:doctor` preflight, auth setup, seeder, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
+| `docs/ai/templates/playwright/` | `setup.mjs` (one-command setup), config (auto free port, Chrome/Edge fallback), `e2e:doctor` preflight, auth setup, seeder, smoke test, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
 
 ### n8n AI workflows (`docs/ai/n8n/`)
 
@@ -173,6 +173,7 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 - **Access control:** separate admin and client guards, Spatie permissions, checks through policies.
 - **AI features:** n8n webhooks called from a Laravel Service.
 - **Database:** MySQL only. **Tests:** Pest + Playwright. **Realtime:** Reverb + Echo.
+- **Playwright:** agents set it up themselves when E2E is needed (`setup.mjs`: packages, isolated `<app>_e2e` database, installed Chrome/Edge if the Chromium download is blocked, scripts, smoke test). You do not need to ask.
 - **Progress:** the agent keeps `docs/ai/progress.md` current (add it to `.gitignore`).
 
 ## Troubleshooting
@@ -182,6 +183,7 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 | "Missing" files listed during install | `composer reinstall emerson-ph/ai-team-setup`, then install again |
 | `sync-ai-files.sh` permission denied | `chmod +x sync-ai-files.sh` |
 | Playwright or Pest stalls, or the port is busy | `npm run e2e:doctor` / `php docs/ai/templates/laravel/test-doctor.php` (see `PLAYWRIGHT.md` Section 8.1) |
+| Playwright is not set up, or Chromium cannot download | `node docs/ai/templates/playwright/setup.mjs` (falls back to installed Chrome/Edge; see `PLAYWRIGHT.md` Section 2.0) |
 | Tool ignores the rules | Restart the editor or reload the window |
 | `rm -rf` fails in PowerShell | Use `Remove-Item -Recurse -Force <path>` |
 

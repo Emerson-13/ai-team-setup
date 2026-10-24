@@ -48,6 +48,7 @@ If you cannot spawn sub-agents, play each role in a **separate written pass** (s
 - **QA writes tests from acceptance criteria**, not by mirroring the implementation. Never delete or weaken a failing test to get green.
 - **Browser/E2E testing uses Playwright** (docs/ai/PLAYWRIGHT.md): main journey, validation failure, authorization denial per role, cross-tenant denial, cross-guard denial, realtime when applicable, against MySQL `*_e2e` only.
 - Run regression tests before and after changes.
+- **Playwright sets itself up:** when E2E is needed and `playwright.config.ts` or `.env.e2e` is missing, run `node docs/ai/templates/playwright/setup.mjs` without asking (installs packages, uses installed Chrome/Edge if the Chromium download is blocked, creates `<app>_e2e`, adds `e2e` scripts and a smoke test), then `npm run e2e:doctor` and `npm run e2e`. Never do this by hand.
 - **Show progress:** keep `docs/ai/progress.md` current (TEAM.md Section 3.2). For E2E, finish with the path of the Playwright HTML report and any traces; say so if the run was headless and unwatched.
 - Strategy recommendations are labeled Required / Recommended / Later and backed by Evidence or marked Hypothesis. Never invent market data, statistics, or quotes.
 
