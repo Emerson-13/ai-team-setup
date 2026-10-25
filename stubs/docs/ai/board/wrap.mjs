@@ -27,21 +27,24 @@ if (!command.length) {
   process.exit(2);
 }
 
+// Quote an argument for the shell: leave plain words alone, single-quote on POSIX, double-quote on Windows (so ( ) ; $ * and spaces survive).
+const win = process.platform === 'win32';
+const SAFE = /^[A-Za-z0-9_\/\\:=.,@%+-]+$/;
+const q = (a) => (SAFE.test(a) ? a : win ? `"${a.replace(/"/g, '\\"')}"` : `'${a.replace(/'/g, "'\\''")}'`);
+const text = command.length === 1 ? command[0] : command.map(q).join(' ');
+
 if (process.env.AI_WRAPPED) {
   // Already inside a wrapper (for example `npm run ai:run -- npm run e2e`, where e2e is wrapped too): just run it, the outer one logs.
-  const r = spawnSync(command.length === 1 ? command[0] : command.map((a) => (/[\s"'&|<>^]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)).join(' '), { shell: true, stdio: 'inherit' });
+  const r = spawnSync(text, { shell: true, stdio: 'inherit' });
   process.exit(r.status ?? 1);
 }
 
 const agent = opts.agent || process.env.AI_BOARD_AGENT || 'agent';
 const stallSec = opts.stall === undefined ? (process.env.CI ? 0 : DEFAULT_STALL_SEC) : Number(opts.stall); // CI runs are not watched by an agent
 const timeoutSec = opts.timeout === undefined ? 0 : Number(opts.timeout);
-const q = (a) => (/[\s"'&|<>^]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a);
-const text = command.length === 1 ? command[0] : command.map(q).join(' ');
 const id = randomBytes(3).toString('hex');
 const label = opts.label || clip(text, 120);
 const started = Date.now();
-const win = process.platform === 'win32';
 
 appendEvent({ source: 'wrap', agent, type: 'command_start', id, text: label, data: { command: clip(text, 500), stallSec, timeoutSec } });
 console.error(`[ai:run ${id}] ${clip(text, 160)}`);

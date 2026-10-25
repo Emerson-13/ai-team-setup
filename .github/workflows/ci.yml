@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pyyaml
+      - run: python3 -I tests/package_check.py "$GITHUB_WORKSPACE"
+
+  node:
+    name: Board, gate and context tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - run: node --test tests/*.test.mjs
+
+  board-ui:
+    name: Board layout (no page scroll, dark mode, node map)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/board-ui.mjs
+
+  installer:
+    name: Installer on Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.2', laravel: '^11.0' }
+          - { php: '8.3', laravel: '^12.0' }
+          - { php: '8.4', laravel: '^12.0' }
+          - { php: '8.3', laravel: '^13.0' }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: pkg
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fresh Laravel app
+        run: composer create-project "laravel/laravel:${{ matrix.laravel }}" app --no-interaction --prefer-dist
+      - name: Require the package from this checkout (copied, like a real install)
+        working-directory: app
+        run: |
+          composer config repositories.pkg '{"type":"path","url":"../pkg","options":{"symlink":false}}'
+          composer require emerson-ph/ai-team-setup:@dev --no-interaction
+      - name: Install twice (second run must also succeed) and partial updates
+        working-directory: app
+        run: |
+          php artisan ai-team:install
+          php artisan ai-team:install
+          php artisan ai-team:install --docs
+          php artisan ai-team:install --config
+          php artisan ai-team:install --scripts
+      - name: Installed files exist
+        working-directory: app
+        run: |
+          for f in AGENTS.md CLAUDE.md GEMINI.md .windsurfrules .clinerules .github/copilot-instructions.md \
+                   .claude/agents/qa-playwright.md .cursor/rules/laravel-team.mdc \
+                   docs/ai/TEAM.md docs/ai/TOOLS.md docs/ai/board/log.mjs docs/ai/tools/gate.mjs docs/ai/tools/context.mjs; do
+            test -s "$f" || { echo "missing $f"; exit 1; }
+          done
+      - name: Board, map and gate work in the new app
+        working-directory: app
+        run: |
+          node docs/ai/board/setup.mjs
+          npm run ai:doctor
+          npm run ai:context
+          npm run ai:context -- --find User
+          npm run ai:gate -- --list
+          node docs/ai/board/log.mjs plan "CI smoke" --task "one :: QA"
+          node docs/ai/board/log.mjs task T1 done "ci"

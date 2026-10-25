@@ -15,7 +15,7 @@ console.log('AI board preflight\n');
 
 Number(process.versions.node.split('.')[0]) >= 18 ? ok(`Node ${process.versions.node}`) : fail(`Node ${process.versions.node} is too old`, 'install Node 18 or newer');
 
-for (const f of ['lib.mjs', 'log.mjs', 'wrap.mjs', 'board.mjs', 'board.html', 'codex.mjs', 'hook.mjs', 'watch.mjs', 'setup.mjs']) {
+for (const f of ['lib.mjs', 'log.mjs', 'wrap.mjs', 'board.mjs', 'board.html', 'codex.mjs', 'hook.mjs', 'watch.mjs', 'setup.mjs', '../tools/gate.mjs', '../tools/context.mjs', '../tools/fp.mjs']) {
   existsSync(join(ROOT, 'docs/ai/board', f)) ? null : fail(`docs/ai/board/${f} is missing`, 'run: php artisan ai-team:install --docs');
 }
 ok('board scripts present');
@@ -31,8 +31,8 @@ for (const [name, f] of [['plan.json', FILES.plan], ['agents.json', FILES.agents
 // package.json scripts
 try {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-  const need = ['ai:board', 'ai:log', 'ai:run', 'ai:doctor', 'ai:probe', 'ai:test'].filter((s) => !pkg.scripts?.[s]);
-  need.length ? warn(`package.json is missing scripts: ${need.join(', ')}. Run: node docs/ai/board/setup.mjs (agents can still call node docs/ai/board/log.mjs directly)`) : ok('npm scripts ai:board, ai:log, ai:run, ai:doctor, ai:probe, ai:test');
+  const need = ['ai:board', 'ai:log', 'ai:run', 'ai:doctor', 'ai:probe', 'ai:test', 'ai:gate', 'ai:context'].filter((s) => !pkg.scripts?.[s]);
+  need.length ? warn(`package.json is missing scripts: ${need.join(', ')}. Run: node docs/ai/board/setup.mjs (agents can still call node docs/ai/board/log.mjs directly)`) : ok('npm scripts ai:board, ai:log, ai:run, ai:doctor, ai:probe, ai:test, ai:gate, ai:context');
 } catch { warn('package.json not found or not readable'); }
 
 // logged scripts

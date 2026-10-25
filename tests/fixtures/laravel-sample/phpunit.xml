@@ -1,0 +1,1 @@
+<phpunit><php><env name="DB_CONNECTION" value="mysql"/></php></phpunit>

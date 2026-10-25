@@ -16,9 +16,14 @@ import {
   AGENT_STATUS, TASK_STATUS, DEFAULT_BUDGET_MIN, appendEvent, clip, loadAgents, loadPlan, nowIso, parseArgs,
   saveAgents, savePlan, stats, readEvents, summaryLine, syncProgress, withLock, FILES,
 } from './lib.mjs';
-import { rmSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT } from './lib.mjs';
 
-const { pos, flags } = parseArgs(process.argv.slice(2), ['task', 'mode', 'size', 'stack', 'owner', 'evidence', 'needs', 'budget', 'after']);
+// Optional: the quality gate lives in docs/ai/tools. Without it (older installs) finish works as before.
+const tools = await import('../tools/fp.mjs').catch(() => null);
+
+const { pos, flags } = parseArgs(process.argv.slice(2), ['task', 'mode', 'size', 'stack', 'owner', 'evidence', 'needs', 'budget', 'after', 'skip-gate']);
 const [cmd, ...rest] = pos;
 const one = (v) => (Array.isArray(v) ? v[v.length - 1] : v);
 const die = (m) => { console.error(`log.mjs: ${m}`); process.exit(2); };
@@ -178,6 +183,13 @@ switch (cmd) {
         ...badAgents.map((a) => `agent ${a.name} is ${a.status}`),
         ...openFindings.map((f) => `finding ${f.id} (${f.severity}) is still open`),
       ];
+      // On a Laravel project the work is not finished until the quality gate is green for the code that exists now.
+      let gateNote = '';
+      if (tools && existsSync(join(ROOT, 'artisan'))) {
+        const g = tools.gateStatus();
+        if (flags['skip-gate']) { gateNote = ` Gate skipped: ${clip(one(flags['skip-gate']), 120)}.`; emit('note', `gate skipped: ${clip(one(flags['skip-gate']), 120)}`); }
+        else if (g.state !== 'pass') problems.push(`quality gate: ${g.detail}. Run: npm run ai:gate   (docs-only change: finish --skip-gate "<reason>")`);
+      }
       if (problems.length && !flags.force) {
         console.error(`NOT FINISHED:\n  ${problems.join('\n  ')}\nFix them, or report them honestly as not done (use --force only when the final report lists them).`);
         console.log(summaryLine(plan, agents));
@@ -185,7 +197,7 @@ switch (cmd) {
       }
       const evs = readEvents(1000000);
       const by = (src) => evs.filter((e) => (e.source || 'agent') === src).length;
-      console.log(`LOG COVERAGE: ${by('agent')} agent reports, ${by('wrap')} wrapped-command events, ${by('hook')} hook events. Put this in the final report; if agent reports is 0 the dashboard was not kept current.`);
+      console.log(`LOG COVERAGE: ${by('agent')} agent reports, ${by('wrap')} wrapped-command events, ${by('hook')} hook events. Put this in the final report; if agent reports is 0 the dashboard was not kept current.${gateNote}`);
       plan.finishedAt = nowIso();
       if (rest.length) plan.next = clip(rest.join(' '), 200);
       savePlan(plan);

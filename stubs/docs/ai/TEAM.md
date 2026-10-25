@@ -23,6 +23,7 @@ Companion documents (read them when the task touches their topic):
 | `docs/ai/PROTOCOL.md` | Delegating to agents or finishing any task: required agents, agent status (running/completed/timed_out/blocked), brief template, no-guessing rules, token discipline, the verify-and-fix loop. |
 | `docs/ai/PROMPTS.md` | Copy-paste prompts for features, bugs, refactors, reviews, roles, storage, AI features, resuming. |
 | `docs/ai/STORAGE.md` | Uploads, files, exports: one `StorageService`, cloud if configured, public-disk fallback, tenant paths. |
+| `docs/ai/TOOLS.md` | Quality gate (`npm run ai:gate`) and project map (`npm run ai:context`): cached, one line per step, no model tokens. |
 | `docs/ai/UI.md` | Building or changing any screen: which UI kit or template to use (Tailwind-based by default), tokens, components first, required states. |
 | `docs/ai/N8N.md` | Any AI feature (chatbot, summarize, rewrite, translate, extract): Laravel calls n8n webhooks. Import-ready workflows are in `docs/ai/n8n/`; how to add new ones and the rules for calling them. |
 

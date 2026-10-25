@@ -106,6 +106,7 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 | `STRATEGY.md` | Strategy Council protocol, Strategy Brief, marketing and SEO requirements |
 | `ACCESS.md` | Roles and permissions with Spatie: admin side and client side as separate guards, super admin, per-company roles, role matrix, tests |
 | `PROTOCOL.md` | Agent status (running / completed / timed out / blocked), required agents, brief template, no-guessing and token rules, verify-and-fix loop |
+| `TOOLS.md` | Quality gate (`npm run ai:gate`: lint, static analysis, Pest, types, build; cached, one line per step) and project map (`npm run ai:context`); both cost no model tokens |
 | `BOARD.md` | Live board: plan and task progress, agent status, commands, stalls; Codex session reader; setup and troubleshooting |
 | `PROMPTS.md` | Copy-paste prompts: feature, bug, refactor, review, roles, storage, AI, resume |
 | `STORAGE.md` | Files and uploads through one `StorageService`: cloud if configured, public-disk fallback |
@@ -120,7 +121,7 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 |---|---|
 | `docs/ai/n8n/` | Import-ready n8n workflows (below) |
 | `docs/ai/templates/laravel/` | `StorageService.php` (copy to `app/Services/Storage/`), `test-doctor.php` (Pest/MySQL preflight) |
-| `docs/ai/board/` | The board scripts (Node, no dependencies): `log.mjs` (agents report plan, tasks, status), `wrap.mjs` (logs a command and stops a stalled one), `board.mjs` (dashboard), `codex.mjs` (reads Codex session files), `watch.mjs` (sees file edits), `hook.mjs` (optional Claude Code hooks), `setup.mjs`, `doctor.mjs` |
+| `docs/ai/board/` | The board scripts (Node, no dependencies): `log.mjs` (agents report plan, tasks, status), `wrap.mjs` (logs a command and stops a stalled one), `board.mjs` (dashboard), `codex.mjs` (reads Codex session files), `watch.mjs` (sees file edits), `../tools/` (`gate.mjs`, `context.mjs`), `hook.mjs` (optional Claude Code hooks), `setup.mjs`, `doctor.mjs` |
 | `docs/ai/templates/playwright/` | `setup.mjs` (one-command setup), config (auto free port, Chrome/Edge fallback), `e2e:doctor` preflight, auth setup, seeder, smoke test, specs (auth, tenant isolation, role-access matrix, realtime, SEO/a11y), GitHub Actions workflow |
 
 ### Live board (`docs/ai/board/`, guide: `docs/ai/BOARD.md`)

@@ -39,6 +39,8 @@ else {
     'ai:doctor': 'node docs/ai/board/doctor.mjs',
     'ai:probe': 'node docs/ai/board/codex.mjs --probe',
     'ai:test': 'node docs/ai/board/wrap.mjs --agent qa-engineer --label pest -- php artisan test',
+    'ai:gate': 'node docs/ai/tools/gate.mjs',
+    'ai:context': 'node docs/ai/tools/context.mjs',
   };
   let changed = false;
   for (const [k, v] of Object.entries(wanted)) {

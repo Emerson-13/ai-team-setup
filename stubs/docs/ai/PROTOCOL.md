@@ -99,6 +99,8 @@ RETURN: the status block from Section 2, then your result
 
 ## 5. Spend tokens carefully
 
+- **Map before search.** `npm run ai:context -- --find <name>` first (TOOLS.md): it answers "where is X, what does it relate to" from a ~3k-token map for the price of a few lines. Never print the whole map.
+- **Gate output is the evidence.** Run `npm run ai:gate` and quote its lines; do not paste logs. Read `docs/ai/state/gate/<step>.log` by line range only when needed.
 - **Find, then read.** `grep`/glob first, then read only the needed line ranges. Do not open whole large files (`TEAM.md` is long: read the section you need, not the file).
 - **Read once.** Do not re-read a file that has not changed. Keep a short note of what you learned instead of re-deriving it.
 - **Do not paste files into replies or briefs.** Point to paths and sections.
@@ -111,7 +113,7 @@ RETURN: the status block from Section 2, then your result
 
 A task is not finished when the code is written. It is finished when the checks pass or the failure is reported honestly.
 
-1. Run the checks that apply: PHP syntax/lint, Pest tests for what changed plus the regression set, frontend type check/build, Playwright for critical journeys (L/XL), `php artisan route:list` when routes changed.
+1. Run `npm run ai:gate` (TOOLS.md): lint, static analysis, Pest, type check and build in one cheap, cached run; add `-- --full` for e2e and audits on L/XL work. It replaces running each by hand. Other checks that apply: PHP syntax/lint, Pest tests for what changed plus the regression set, frontend type check/build, Playwright for critical journeys (L/XL), `php artisan route:list` when routes changed.
 2. If something fails: read the real error, find the cause, fix it, **re-run the same check**. Do not weaken, skip, or delete a test to get green.
 3. Repeat at most 3 times per failure. Then stop: status `blocked`, with the error, what you tried, and what you suspect.
 4. Check every agent's output against the real files before accepting it.
