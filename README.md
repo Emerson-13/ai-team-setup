@@ -131,7 +131,7 @@ node docs/ai/board/setup.mjs     # once: npm scripts + .gitignore; logs npm run 
 npm run ai:board                 # dashboard at http://127.0.0.1:4177 (VS Code: Simple Browser: Show)
 npm run ai:doctor                # preflight;  npm run ai:probe  shows what it can read from Codex on your machine
 npm run ai:test                  # Pest, logged by the script;  npm run e2e is logged too
-npm run ai:run -- <command>      # any other heavy command: logged, stopped if it stalls (exit 124)
+npm run ai:run -- <command>      # any other heavy command: logged, heartbeat every 30 s, stopped only if silent past its limit AND still alive (exit 124)
 ```
 
 The dashboard fits one screen (no scrolling), has dark and light mode, and a clickable **node map** of plan, agents and commands (drag, scroll to zoom, click a node). An **"Is it logging?"** panel and an amber banner tell you when the agent is working but not logging, with a button that copies a reminder to paste to it. Four layers, so you are not only relying on the agent to obey: **(0)** file edits are seen by a watcher; **(1)** wrapped commands (`npm run e2e`, `npm run ai:test`) are logged by a script; **(2)** the tool's own record is read (Codex session files, or Claude Code hooks), including the tool's own plan; **(3)** agents report names, status and plan tasks with `node docs/ai/board/log.mjs` (`plan`, `task`, `agent`, `finding`, `finish`). Every report rewrites `docs/ai/progress.md` and prints a `PROGRESS 3/5 tasks (60%)` line the agent shows in its reply. Limits: you see status, steps and evidence, not private reasoning; in Codex the agent names are roles Codex plays, so only layers 1 and 2 are certain.

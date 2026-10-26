@@ -10,6 +10,8 @@ import { dirname, join } from 'node:path';
 import { ROOT, STATE_DIR, syncProgress, loadPlan } from './lib.mjs';
 
 const args = new Set(process.argv.slice(2));
+const OLD_E2E = 'node docs/ai/board/wrap.mjs --agent qa-playwright --label e2e -- npm run e2e:raw --';
+const NEW_E2E = 'node docs/ai/board/wrap.mjs --agent qa-playwright --label e2e --stall 300 --timeout 1800 -- npm run e2e:raw --';
 const ok = (m) => console.log(`  ok    ${m}`);
 const skip = (m) => console.log(`  skip  ${m}`);
 const fail = (m) => { console.log(`  FAIL  ${m}`); process.exitCode = 1; };
@@ -38,7 +40,7 @@ else {
     'ai:run': 'node docs/ai/board/wrap.mjs',
     'ai:doctor': 'node docs/ai/board/doctor.mjs',
     'ai:probe': 'node docs/ai/board/codex.mjs --probe',
-    'ai:test': 'node docs/ai/board/wrap.mjs --agent qa-engineer --label pest -- php artisan test',
+    'ai:test': 'node docs/ai/board/wrap.mjs --agent qa-engineer --label pest --stall 1800 --timeout 1800 -- php artisan test',
     'ai:gate': 'node docs/ai/tools/gate.mjs',
     'ai:context': 'node docs/ai/tools/context.mjs',
   };
@@ -50,11 +52,12 @@ else {
   // Wrapped scripts: the script writes the log, so it is recorded even when the agent forgets.
   if (args.has('--no-wrap')) skip('--no-wrap');
   else if (!pkg.scripts.e2e) skip('script e2e not found (it is wrapped later by the Playwright setup)');
+  else if (pkg.scripts.e2e === OLD_E2E) { pkg.scripts.e2e = NEW_E2E; changed = true; ok('script e2e now has Playwright limits (stall 300 s, timeout 1800 s, heartbeat)'); }
   else if (/wrap\.mjs/.test(pkg.scripts.e2e)) skip('script e2e is already logged');
   else if (pkg.scripts['e2e:raw'] && pkg.scripts['e2e:raw'] !== pkg.scripts.e2e) skip('e2e:raw already exists with other content; not touching e2e');
   else {
     pkg.scripts['e2e:raw'] = pkg.scripts.e2e;
-    pkg.scripts.e2e = 'node docs/ai/board/wrap.mjs --agent qa-playwright --label e2e -- npm run e2e:raw --';
+    pkg.scripts.e2e = NEW_E2E;
     changed = true; ok('script e2e is now logged by the board (original kept as e2e:raw)');
   }
   if (changed) writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);

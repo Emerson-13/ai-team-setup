@@ -38,3 +38,19 @@ test('setup: adds scripts, wraps e2e, is idempotent', () => {
   const second = node(d, 'docs/ai/board/setup.mjs'); assert.doesNotMatch(second.out, /\bok {4}script/);
   assert.match(readFileSync(join(d, '.gitignore'), 'utf8'), /docs\/ai\/state/);
 });
+
+test('wrap: a silent but alive command shows a heartbeat, and a hard timeout is reported as TIME LIMIT', () => {
+  const d = project({ laravel: false }); const w = (...a) => node(d, 'docs/ai/board/wrap.mjs', a);
+  const h = w('--stall', '5', '--heartbeat', '1', '--', process.execPath, '-e', 'console.log("go");setTimeout(()=>{},30000)');
+  assert.equal(h.code, 124); assert.match(h.out, /\[ai:run [0-9a-f]{6} heartbeat\] process alive, elapsed \d+s, last output \d+s ago/); assert.match(h.out, /last output:\s+go/);
+  const t = w('--timeout', '2', '--stall', '0', '--heartbeat', '0', '--', process.execPath, '-e', 'setInterval(()=>console.log("tick"),300)');
+  assert.equal(t.code, 124); assert.match(t.out, /BLOCKED: time limit of 2s reached/); assert.doesNotMatch(t.out, /heartbeat/);
+});
+
+test('setup: ai:test and e2e get long-suite limits; an old wrapped e2e is upgraded once', () => {
+  const d = project({ scripts: { e2e: 'node docs/ai/board/wrap.mjs --agent qa-playwright --label e2e -- npm run e2e:raw --', 'e2e:raw': 'playwright test' } });
+  node(d, 'docs/ai/board/setup.mjs');
+  const pkg = JSON.parse(readFileSync(join(d, 'package.json'), 'utf8'));
+  assert.match(pkg.scripts['ai:test'], /--stall 1800 --timeout 1800/); assert.match(pkg.scripts.e2e, /--stall 300 --timeout 1800/);
+  assert.doesNotMatch(node(d, 'docs/ai/board/setup.mjs').out, /Playwright limits/);
+});

@@ -4,7 +4,10 @@
 //   npm run ai:run -- npm run e2e
 //   npm run ai:run -- php artisan test
 //   node docs/ai/board/wrap.mjs --stall 180 --label "pest orders" -- php artisan test --filter=Order
-// Options: --agent <name> (default $AI_BOARD_AGENT or "agent")  --label <text>  --stall <sec, default 120, 0 = off>  --timeout <sec, 0 = off>
+// Options: --agent <name> (default $AI_BOARD_AGENT or "agent")  --label <text>  --stall <sec, default 120, 0 = off>  --timeout <sec, 0 = off>  --heartbeat <sec, default 30, 0 = off>
+// A heartbeat line ("[ai:run id heartbeat] process alive, elapsed 180s, last output 12s ago") shows the command is alive while it is silent,
+// and a silent command is only stopped when its process still exists at the limit (a dead one is reported with its real exit code).
+// Long suites need long limits: Pest --stall 1800 --timeout 1800, Playwright --stall 300 --timeout 1800 (setup.mjs wires ai:test and e2e that way).
 // Exit code is the command's own. 124 = stalled or timed out (reported as BLOCKED; do not run the same command again).
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -13,7 +16,7 @@ import { DEFAULT_STALL_SEC, appendEvent, clip, stripAnsi } from './lib.mjs';
 const argv = process.argv.slice(2);
 const opts = {};
 let i = 0;
-const known = new Set(['agent', 'label', 'stall', 'timeout']);
+const known = new Set(['agent', 'label', 'stall', 'timeout', 'heartbeat']);
 for (; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--') { i++; break; }
@@ -23,7 +26,7 @@ for (; i < argv.length; i++) {
 }
 const command = argv.slice(i);
 if (!command.length) {
-  console.error('usage: wrap.mjs [--agent n] [--label t] [--stall sec] [--timeout sec] -- <command...>');
+  console.error('usage: wrap.mjs [--agent n] [--label t] [--stall sec] [--timeout sec] [--heartbeat sec] -- <command...>');
   process.exit(2);
 }
 
@@ -42,6 +45,8 @@ if (process.env.AI_WRAPPED) {
 const agent = opts.agent || process.env.AI_BOARD_AGENT || 'agent';
 const stallSec = opts.stall === undefined ? (process.env.CI ? 0 : DEFAULT_STALL_SEC) : Number(opts.stall); // CI runs are not watched by an agent
 const timeoutSec = opts.timeout === undefined ? 0 : Number(opts.timeout);
+const heartbeatSec = opts.heartbeat === undefined ? 30 : Number(opts.heartbeat);
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 const id = randomBytes(3).toString('hex');
 const label = opts.label || clip(text, 120);
 const started = Date.now();
@@ -70,25 +75,33 @@ let finished = false;
 function finish(code, kind, reason) {
   if (finished) return;
   finished = true;
-  clearInterval(timer);
+  clearInterval(timer); if (beat) clearInterval(beat);
   const ms = Date.now() - started;
   appendEvent({ source: 'wrap', agent, type: kind, id, text: `${label} -> ${reason || `exit ${code}`} (${(ms / 1000).toFixed(1)}s)`, data: { code, durationMs: ms, tail: tail.slice(-12) } });
   console.error(`[ai:run ${id}] ${reason || `exit ${code}`} in ${(ms / 1000).toFixed(1)}s`);
   process.exit(code);
 }
 
+const lastLines = () => (tail.length ? `last output:\n  ${tail.slice(-6).join('\n  ')}` : 'last output: (none at all)');
 const timer = setInterval(() => {
   const now = Date.now();
+  if (finished || !alive(child.pid)) return; // a process that is already gone reports its own exit code on close
   if (stallSec > 0 && now - lastOutput > stallSec * 1000) {
+    console.error(`\n[ai:run ${id}] stopping: pid ${child.pid} alive, elapsed ${Math.round((now - started) / 1000)}s, no output for ${stallSec}s\n${lastLines()}`);
     killTree();
     console.error(`\nBLOCKED: no output for ${stallSec}s, command stopped. Run the doctor (npm run e2e:doctor, or php docs/ai/templates/laravel/test-doctor.php), report status blocked with this output, and do not start the same command again.`);
     finish(124, 'command_stalled', `STALLED, no output for ${stallSec}s`);
   } else if (timeoutSec > 0 && now - started > timeoutSec * 1000) {
+    console.error(`\n[ai:run ${id}] stopping: pid ${child.pid} alive, hard limit of ${timeoutSec}s reached\n${lastLines()}`);
     killTree();
     console.error(`\nBLOCKED: time limit of ${timeoutSec}s reached, command stopped. Report status timed_out/blocked; do not start the same command again.`);
     finish(124, 'command_stalled', `TIMED OUT after ${timeoutSec}s`);
   }
 }, 1000);
+const beat = heartbeatSec > 0 ? setInterval(() => {
+  if (finished) return;
+  console.error(`[ai:run ${id} heartbeat] process ${alive(child.pid) ? 'alive' : 'gone, waiting for exit'}, elapsed ${Math.round((Date.now() - started) / 1000)}s, last output ${Math.round((Date.now() - lastOutput) / 1000)}s ago`);
+}, heartbeatSec * 1000) : null;
 
 child.on('error', (e) => finish(127, 'command_end', `could not start: ${e.message}`));
 child.on('close', (code, signal) => finish(code ?? (signal ? 1 : 0), 'command_end', signal ? `killed by ${signal}` : undefined));
