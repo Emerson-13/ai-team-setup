@@ -63,7 +63,7 @@ One **Orchestrator (Tech Lead)** is the single voice to you. It sizes the task (
 | Security Reviewer | AuthN/AuthZ, tenant isolation, data exposure |
 | Performance Reviewer | Queries, N+1, caching, queues |
 | Code Reviewer | Architecture, maintainability, duplication |
-| UX Reviewer | User flow, states, consistency, UI-kit conformity |
+| UX Reviewer | User flow, states, consistency, layout and component reuse, UX decisions |
 
 The author never reviews their own work. Critical and high findings block completion.
 
@@ -110,7 +110,7 @@ The other roles run as separate written passes in any tool (see `TEAM.md` Sectio
 | `BOARD.md` | Live board: plan and task progress, agent status, commands, stalls; Codex session reader; setup and troubleshooting |
 | `PROMPTS.md` | Copy-paste prompts: feature, bug, refactor, review, roles, storage, AI, resume |
 | `STORAGE.md` | Files and uploads through one `StorageService`: cloud if configured, public-disk fallback |
-| `UI.md` | Build screens from one ready-made UI kit or template (Tailwind-based by default), not custom CSS |
+| `UI.md` | Layout-first screens (header + sidebar by app type), reusable components and composables, UX decision rules (page vs modal vs drawer vs tab), component manifest and UX review checklist |
 | `N8N.md` | AI features through n8n: import steps, Laravel client, rules |
 | `PACKAGES.md` | Package intake checklist, Reverb + Echo setup, Spatie and other packages |
 | `PLAYWRIGHT.md` | E2E guide, isolation, seed data, watching a run |
@@ -185,7 +185,7 @@ powershell -ExecutionPolicy Bypass -File .\sync-ai-files.ps1  # Windows
 - **Authenticated pages:** the agent asks which framework (Vue + Inertia, React + Inertia, Livewire, other).
 - **Agents:** the agent uses your named agents, shows a status table (running / completed / timed out / blocked), and stops at blocked or timed out. It fixes failing checks before it finishes.
 - **Files:** one `StorageService`; cloud storage if configured, otherwise the public disk (private files stay private).
-- **UI:** one ready-made kit or template (the agent asks once; suggests shadcn-vue / shadcn/ui, Flowbite, DaisyUI, Preline, or your own template).
+- **UI:** layout first (header + sidebar by app type), reusable components and composables, and UX-driven breakdown of dense pages into pages, modals, drawers and tabs. One ready-made kit or template (the agent asks once about kit, framework and app type; suggests shadcn-vue / shadcn/ui, Flowbite, DaisyUI, Preline, or your own template).
 - **Access control:** separate admin and client guards, Spatie permissions, checks through policies.
 - **AI features:** n8n webhooks called from a Laravel Service.
 - **Database:** MySQL only. **Tests:** Pest + Playwright. **Realtime:** Reverb + Echo.

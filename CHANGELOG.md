@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.15
+- `UI.md` rewritten as a UI/UX playbook. The old rule "one ready-made kit, never hand-made CSS" stays kit-first, but agents may now build their own reusable components when the kit has none.
+- **Layout first:** every page uses a layout from the layouts folder; every authenticated layout is header + sidebar, chosen by app type (admin, multi-tenant SaaS, HRIS/ERP, booking, seller dashboard, POS, client portal, storefront, auth, wizard). A missing layout is created before the page. Navigation comes from one permission-filtered config.
+- **Components first:** decision order (existing, kit, one new reusable, page-specific last); shared tabs, buttons, fields, modal shell, cards, table, badges; props/slots/typed-emits contract; per-page component manifest.
+- **Composables:** modal, confirm, data table/filters, URL tabs, form, permissions, toast; thin pages.
+- **UX decision-making:** four questions per page, rules for breaking dense screens into pages, modals, drawers, tabs and steppers that navigate to each other, page vs modal vs drawer table, forms, tables, feedback, all states, responsive, accessibility.
+- Team Brief gets LAYOUT, UX DECISIONS, COMPONENT MANIFEST, COMPOSABLES, SHARED FILES CHANGED, STATES COVERED; UX Reviewer got a checklist.
+- `AGENTS.md` and the Cursor rule updated. Run `./sync-ai-files.sh` (or the `.ps1`) to regenerate the other tools' copies.
+
 ## 1.0.14
 - `ai:gate` reliability: per-step stall and hard timeouts (Pest 1800 s, Playwright 300 s no-output / 1800 s total, build 300 s, PHPStan 180 s, TypeScript 180 s) instead of one global 120 s; Pest no longer runs with `--compact`.
 - Heartbeat every 30 s (`[Pest heartbeat] process alive, elapsed 180s`). "No output" no longer means "blocked" by itself: a command is stopped only when it is silent past its limit and its process is still alive. `wrap.mjs` (`ai:run`, `ai:test`, `e2e`) got the same heartbeat and liveness check; `setup.mjs` wires `ai:test` and `e2e` with long-suite limits and upgrades an old wrapped `e2e` once.
